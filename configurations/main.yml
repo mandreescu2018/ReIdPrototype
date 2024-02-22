@@ -1,0 +1,18 @@
+SOLVER:
+  IMS_PER_BATCH: 32
+
+INPUT:
+  SIZE_TRAIN: [256, 128]
+  SIZE_TEST: [256, 128]
+  PIXEL_MEAN: [0.485, 0.456, 0.406]
+  PIXEL_STD: [0.229, 0.224, 0.225]
+
+DATALOADER:
+  SAMPLER: 'softmax_triplet'
+  NUM_INSTANCE: 4
+  NUM_WORKERS: 0
+
+DATASETS:
+  NAMES: market1501
+  ROOT_DIR: ('D:\datasets')
+  DIR: 'market1501'
