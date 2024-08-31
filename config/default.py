@@ -97,7 +97,7 @@ _C.INPUT.SIZE_TRAIN = [384, 128]
 # Size of the image during test
 _C.INPUT.SIZE_TEST = [384, 128]
 # Random probability for image horizontal flip
-_C.INPUT.PROB = 0.5
+_C.INPUT.HF_PROB = 0.5
 # Random probability for random erasing
 _C.INPUT.RE_PROB = 0.5
 # Random erasing
@@ -193,6 +193,8 @@ _C.SOLVER.EVAL_PERIOD = 10
 # This is global, so if we have 8 GPUs and IMS_PER_BATCH = 128, each GPU will
 # contain 16 images per batch
 _C.SOLVER.IMS_PER_BATCH = 64
+# feature_dim
+_C.SOLVER.FEATURE_DIMENSION = 2048
 
 # ---------------------------------------------------------------------------- #
 # TEST

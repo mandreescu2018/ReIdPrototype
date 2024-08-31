@@ -26,6 +26,10 @@ def make_dataloader(cfg):
     
     dataset = __factory[cfg.DATASETS.NAMES](cfg)
 
+    num_classes = dataset.num_train_pids
+    cam_num = dataset.num_train_cams
+    track_view_num = dataset.num_train_vids
+
     train_transform = T.Compose([
         T.Resize(cfg.INPUT.SIZE_TRAIN),
         T.RandomHorizontalFlip(),
@@ -41,6 +45,8 @@ def make_dataloader(cfg):
     ])
 
     train_dataset = ImageDataset(dataset.train, transform=train_transform)
+    
+
     train_dataloader = DataLoader(
         train_dataset,
         batch_size=cfg.SOLVER.IMS_PER_BATCH,
@@ -62,7 +68,7 @@ def make_dataloader(cfg):
 
     
 
-    return train_dataloader, test_dataloader
+    return train_dataloader, test_dataloader, num_classes, cam_num, track_view_num
 
 
 

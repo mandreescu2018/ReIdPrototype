@@ -1,9 +1,13 @@
 MODEL:
   PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
-  NAME: 'vit_transformer'
+  NAME: 'vit_transformer_jpm'
+  TRANSFORMER_TYPE: 'vit_base_patch16_224_TransReID'
+  IF_LABELSMOOTH: 'off'
 
 SOLVER:
   IMS_PER_BATCH: 32
+  FEATURE_DIMENSION: 2048
+  MARGIN: None
 
 INPUT:
   SIZE_TRAIN: [256, 128]

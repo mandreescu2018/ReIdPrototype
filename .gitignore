@@ -1,6 +1,15 @@
-config/__pycache__/__init__.cpython-38.pyc
+config/__pycache__/*
 config/__pycache__/default.cpython-38.pyc
 datasets/__pycache__/__init__.cpython-38.pyc
 datasets/__pycache__/base_dataset.cpython-38.pyc
 datasets/__pycache__/make_dataloader.cpython-38.pyc
 datasets/__pycache__/market1501.cpython-38.pyc
+loss/__pycache__/__init__.cpython-39.pyc
+datasets/__pycache__/*
+loss/__pycache__/*
+models/__pycache__/*
+processors/__pycache__/*
+weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth
+utils/__pycache__/*
+models/backbones/__pycache__/*
+.vscode/launch.json
