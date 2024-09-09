@@ -4,14 +4,6 @@ import os
 from utils.reranking import re_ranking
 
 
-# def euclidean_distance(qf, gf):
-#     m = qf.shape[0]
-#     n = gf.shape[0]
-#     dist_mat = np.power(qf, 2).sum(axis=1, keepdims=True).repeat(n, axis=1) + \
-#             np.power(gf, 2).sum(axis=1, keepdims=True).repeat(m, axis=1).T
-#     dist_mat += -2 * np.dot(qf, gf.T)
-#     return dist_mat
-
 def euclidean_distance(qf, gf):
     m = qf.shape[0]
     n = gf.shape[0]
@@ -19,6 +11,19 @@ def euclidean_distance(qf, gf):
                torch.pow(gf, 2).sum(dim=1, keepdim=True).expand(n, m).t()
     dist_mat.addmm_(1, -2, qf, gf.t())
     return dist_mat.cpu().numpy()
+
+def cosine_similarity(qf, gf):
+    epsilon = 0.00001
+    dist_mat = qf.mm(gf.t())
+    qf_norm = torch.norm(qf, p=2, dim=1, keepdim=True)  # mx1
+    gf_norm = torch.norm(gf, p=2, dim=1, keepdim=True)  # nx1
+    qg_normdot = qf_norm.mm(gf_norm.t())
+
+    dist_mat = dist_mat.mul(1 / qg_normdot).cpu().numpy()
+    dist_mat = np.clip(dist_mat, -1 + epsilon, 1 - epsilon)
+    dist_mat = np.arccos(dist_mat)
+    return dist_mat
+
 
 def eval_func(distmat, q_pids, g_pids, q_camids, g_camids, max_rank=50):
     """Evaluation with market1501 metric
@@ -103,11 +108,8 @@ class R1_mAP_eval():
 
     def compute(self):  # called after each epoch
         feats = torch.cat(self.feats, dim=0)
-        # feats = np.concatenate(self.feats, axis=0)
         if self.feat_norm:
             print("The test feature is normalized")
-            norm = np.linalg.norm(feats, ord=2, axis=1, keepdims=True)
-            # feats = feats / norm  # normalize along channel
             feats = torch.nn.functional.normalize(feats, dim=1, p=2)  # along channel
         # query
         qf = feats[:self.num_query]

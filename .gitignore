@@ -13,3 +13,7 @@ weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth
 utils/__pycache__/*
 models/backbones/__pycache__/*
 .vscode/launch.json
+wandb/*
+logs/0321_market_vit_base/*
+solver/__pycache__/*
+logs/0321_market_vit_base_new_ds/train_log.txt

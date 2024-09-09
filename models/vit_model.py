@@ -204,7 +204,7 @@ class build_transformer(nn.Module):
                 return global_feat
 
     def load_param(self, trained_path):
-        param_dict = torch.load(trained_path)
+        param_dict = torch.load(trained_path)['model_state_dict']
         for i in param_dict:
             self.state_dict()[i.replace('module.', '')].copy_(param_dict[i])
         print('Loading pretrained model from {}'.format(trained_path))

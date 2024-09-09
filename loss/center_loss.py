@@ -25,7 +25,7 @@ class CenterLoss(nn.Module):
         self.device = cfg.DEVICE
         self.num_classes = cfg.DATASETS.NUMBER_OF_CLASSES
 
-        self.centers = nn.Parameter(torch.randn(self.num_classes, cfg.SOLVER.FEATURE_DIMENSION)).to(self.device)
+        self.centers = nn.Parameter(torch.randn(self.num_classes, cfg.SOLVER.FEATURE_DIMENSION).to(self.device))
 
     def forward(self, x, labels):
         """

@@ -13,7 +13,6 @@ class BaseDataset(object):
             number of cameras
             number of tracks (views)
         """
-
         pids, cams, tracks = set(), set(), set()
         for _, pid, camid, trackid in data:
             pids.add(pid)
@@ -53,7 +52,7 @@ class ImageDataset(Dataset):
         img_path, pid, camid, trackid = self.data[index]
         img = self.read_image(img_path)
         img = self.transform(img)
-        return img, pid, camid, trackid
+        return img, pid, camid, trackid, img_path.split('/')[-1]
     
     @staticmethod
     def read_image(img_path):
@@ -68,3 +67,4 @@ class ImageDataset(Dataset):
             except IOError:
                 print("IOError incurred when reading '{}'. Will redo. Don't worry. Just chill.".format(img_path))
         return img
+    

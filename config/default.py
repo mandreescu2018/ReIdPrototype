@@ -225,3 +225,4 @@ _C.TEST.VIS = False
 # ---------------------------------------------------------------------------- #
 # Path to checkpoint and saved log of trained model
 _C.OUTPUT_DIR = ""
+_C.WANDB = False

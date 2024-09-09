@@ -10,13 +10,15 @@ from torch.utils.data import DataLoader
 import torchvision
 import torchvision.transforms as T
 import datasets
-from .market1501 import Market1501
+from .market1501_prototype import Market1501_prototype
 from .base_dataset import ImageDataset
+from .image_dataset import ImageDataset_prototype
 from .data_transforms import Transforms
 from .sampler import RandomIdentitySampler
+import pandas as pd
 
 __factory = {
-    'market1501': Market1501, # datasets.Market1501,
+    'market1501': Market1501_prototype, # datasets.Market1501,
     'dukemtmc': None, # datasets.DukeMTMC,
     'msmt17': None, # datasets.MSMT17
     'cuhk03': None, # datasets.CUHK03
@@ -41,7 +43,7 @@ def val_collate_fn(batch):
     return torch.stack(imgs, dim=0), pids, camids, camids_batch, viewids, img_paths
 
 
-def make_dataloader(cfg):
+def make_dataloader_prototype(cfg):
     
     dataset = __factory[cfg.DATASETS.NAMES](cfg)
 
@@ -56,19 +58,19 @@ def make_dataloader(cfg):
     num_workers = cfg.DATALOADER.NUM_WORKERS
 
     
-    train_dataset = ImageDataset(dataset.train, transform=train_transforms)
+    train_dataset = ImageDataset_prototype(dataset.train, transform=train_transforms)
     
 
     train_dataloader = DataLoader(
         train_dataset,
         batch_size=cfg.SOLVER.IMS_PER_BATCH,
         num_workers=cfg.DATALOADER.NUM_WORKERS,
-        sampler=RandomIdentitySampler(dataset.train, cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_INSTANCE),
+        sampler=RandomIdentitySampler(dataset.train.itertuples(index=False, name=None), cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_INSTANCE),
         pin_memory=True,
         drop_last=True,
     )
 
-    val_set = ImageDataset(dataset.query + dataset.gallery, val_transforms)
+    val_set = ImageDataset_prototype(pd.concat([dataset.query, dataset.gallery], ignore_index=True), val_transforms)
 
     val_loader = DataLoader(
         val_set, 

@@ -2,10 +2,15 @@ import os
 import glob
 import re
 from torch.utils.data import Dataset
-from.base_dataset import BaseDataset
+from.base_dataset_prototype import BaseDataset_prototype
 
 
-class Market1501(BaseDataset):
+import os
+import glob
+import re
+import pandas as pd
+
+class Market1501_prototype(BaseDataset_prototype):
     def __init__(self, cfg, verbose=True, pid_begin=0):
         self.root = cfg.DATASETS.ROOT_DIR
         self.dataset_dir = os.path.join(self.root, cfg.DATASETS.DIR)
@@ -40,21 +45,25 @@ class Market1501(BaseDataset):
         img_paths = glob.glob(os.path.join(dir_path, '*.jpg'))
         pattern = re.compile(r'([-\d]+)_c(\d)')
 
-        pid_container = set()
+        data = []
         for img_path in img_paths:
-            pid, _ = map(int, pattern.search(img_path).groups())
-            if pid == -1: continue # junk images are igmored
-            pid_container.add(pid)
-        pid2label = {pid: label for label, pid in enumerate(pid_container)}
-        dataset = []
-        for img_path in sorted(img_paths):
-            pid, camid = map(int, pattern.search(img_path).groups())
-            if pid == -1: continue  # junk images are just ignored
-            assert 0 <= pid <= 1501  # pid == 0 means background
-            assert 1 <= camid <= 6
-            camid -= 1  # index starts from 0
-            if relabel: pid = pid2label[pid]
+            match = pattern.search(img_path)
+            if match:
+                pid, camid = map(int, match.groups())
+                if pid == -1: continue  # junk images are ignored
+                data.append((img_path, pid, camid))
 
-            dataset.append((img_path, self.pid_begin + pid, camid, 0))
-        
-        return dataset
+        df = pd.DataFrame(data, columns=['img_path', 'pid', 'camid'])
+        df = df[df['pid'] != -1]  # Remove junk images
+        df['camid'] -= 1  # index starts from 0
+
+        if relabel:
+            pid2label = {pid: label for label, pid in enumerate(df['pid'].unique())}
+            df['pid'] = df['pid'].map(pid2label)
+
+        df['pid'] += self.pid_begin
+        df['trackid'] = 0  # Add a label column with default value 0
+        return df
+
+        # dataset = df.to_records(index=False).tolist()
+        # return dataset
