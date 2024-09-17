@@ -13,7 +13,7 @@ class ProcessorTransformer(ProcessorBase):
          self.logger.info('Start training')
          self.scaler = amp.GradScaler(self.device)
 
-         for epoch in range(1, self.epochs+1):
+         for epoch in range(self.start_epoch+1, self.epochs+1):
                 # self.evaluator.reset()
                 # self.loss_meter.reset()
                 # self.acc_meter.reset()
@@ -24,9 +24,10 @@ class ProcessorTransformer(ProcessorBase):
                 self.train_step()
                 self.on_epoch_end(start_time)
                 self.log_to_wandb()
-                if epoch % self.eval_period == 0 or epoch == 1:
+                if epoch % self.config.SOLVER.EVAL_PERIOD == 0 or epoch == 1:
                     self.validation_step()
-                if epoch % self.checkpoint_period == 0:
+                if epoch % self.config.SOLVER.CHECKPOINT_PERIOD == 0:
+                # if epoch % self.checkpoint_period == 0:
                     self.save_model_for_resume(os.path.join(self.config.OUTPUT_DIR, self.config.MODEL.NAME + '_resume_{}.pth'.format(epoch))) 
 
     def zero_grading(self):
