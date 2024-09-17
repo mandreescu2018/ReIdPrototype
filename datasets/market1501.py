@@ -7,8 +7,7 @@ from.base_dataset import BaseDataset
 
 class Market1501(BaseDataset):
     def __init__(self, cfg, verbose=True, pid_begin=0):
-        self.root = cfg.DATASETS.ROOT_DIR
-        self.dataset_dir = os.path.join(self.root, cfg.DATASETS.DIR)
+        self.dataset_dir = os.path.join(cfg.DATASETS.ROOT_DIR, cfg.DATASETS.DIR)
         self.train_dir = os.path.join(self.dataset_dir, 'bounding_box_train')
         self.query_dir = os.path.join(self.dataset_dir, 'query')
         self.gallery_dir = os.path.join(self.dataset_dir, 'bounding_box_test')

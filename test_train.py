@@ -18,6 +18,7 @@ if __name__ == '__main__':
         "--config_file", default="configurations/vit_base.yml", help="path to config file", type=str
     )
     
+    
     args = parser.parse_args()
 
     if args.config_file:
@@ -26,6 +27,8 @@ if __name__ == '__main__':
     set_seeds(cfg.SOLVER.SEED)
 
     cfg.DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'    
+
+    start_epoch = 0
 
     # logger
     logger = setup_logger("ReIDPrototype", cfg.OUTPUT_DIR, if_train=True)
@@ -45,6 +48,7 @@ if __name__ == '__main__':
 
     # Model
     model = get_model(cfg)
+    model.to(cfg.DEVICE)
     
 
     # Losses
@@ -54,12 +58,7 @@ if __name__ == '__main__':
     # Optimizers
     optimizer = make_optimizer(cfg, model)
     optimizer_center = torch.optim.SGD(center_criterion.parameters(), lr=cfg.SOLVER.CENTER_LR)
-    scheduler = create_scheduler(cfg, optimizer)
-
-    if cfg.MODEL.PRETRAIN_CHOICE == 'resume':
-        model_path = cfg.MODEL.PRETRAIN_PATH        
-        print('Loading pretrained model for resume from {}'.format(model_path))
-        model, optimizer, current_epoch, scheduler, _ = model.load_param_resume(model_path, optimizer, scheduler)
+    scheduler = create_scheduler(cfg, optimizer)    
 
     proc = ProcessorTransformer(cfg, 
                                 model, 
@@ -69,7 +68,8 @@ if __name__ == '__main__':
                                 optimizer_center,
                                 center_criterion,
                                 loss_fn,
-                                scheduler)
+                                scheduler,
+                                start_epoch=start_epoch)
     proc.train()
 
 

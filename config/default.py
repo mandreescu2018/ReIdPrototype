@@ -221,8 +221,18 @@ _C.TEST.IMG_TEST_BATCH = 512
 _C.TEST.TEST_BATCH = 32
 _C.TEST.VIS = False
 # ---------------------------------------------------------------------------- #
+# Weights & Biases
+# ---------------------------------------------------------------------------- #
+_C.WANDB = CN()
+# Whether to use wandb
+_C.WANDB.USE = False
+# Project name in wandb
+_C.WANDB.PROJECT = "reid"
+# Experiment name in wandb
+_C.WANDB.NAME = "baseline"
+
+# ---------------------------------------------------------------------------- #
 # Misc options
 # ---------------------------------------------------------------------------- #
 # Path to checkpoint and saved log of trained model
 _C.OUTPUT_DIR = ""
-_C.WANDB = False

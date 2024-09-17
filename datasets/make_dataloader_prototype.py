@@ -11,6 +11,7 @@ import torchvision
 import torchvision.transforms as T
 import datasets
 from .market1501_prototype import Market1501_prototype
+from .msmt17_prototype import MSMT17_Prototype
 from .base_dataset import ImageDataset
 from .image_dataset import ImageDataset_prototype
 from .data_transforms import Transforms
@@ -20,7 +21,7 @@ import pandas as pd
 __factory = {
     'market1501': Market1501_prototype, # datasets.Market1501,
     'dukemtmc': None, # datasets.DukeMTMC,
-    'msmt17': None, # datasets.MSMT17
+    'msmt17': MSMT17_Prototype, # datasets.MSMT17
     'cuhk03': None, # datasets.CUHK03
     'viper': None, # datasets.VIPeR
 

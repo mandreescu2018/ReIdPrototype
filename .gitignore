@@ -17,3 +17,5 @@ wandb/*
 logs/0321_market_vit_base/*
 solver/__pycache__/*
 logs/0321_market_vit_base_new_ds/train_log.txt
+logs/msmt17_vit_base/*
+logs/0321_market_vit_base_jpm/train_log.txt

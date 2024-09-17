@@ -4,6 +4,7 @@ from .vit_model import build_transformer, build_transformer_local
 
 __factory = {
     'vit_transformer': build_transformer,
+    'vit_transformer_jpm': build_transformer_local,
     # 'mobilenet': MobileNetV2,
 }
 

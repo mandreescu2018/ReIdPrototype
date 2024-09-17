@@ -41,7 +41,9 @@ def main(cfg):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Test dataset")
-    parser.add_argument("--config_file", type=str, default='configurations/vit_base.yml', help="Path to the configuration file")
+    # parser.add_argument("--config_file", type=str, default='configurations/vit_base.yml', help="Path to the configuration file")
+    parser.add_argument("--config_file", type=str, default='configurations/MSTM17/vit_base.yml', help="Path to the configuration file")
+    # "configurations\MSTM17\vit_base.yml"
     
     args = parser.parse_args()
     cfg.merge_from_file(args.config_file)

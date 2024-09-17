@@ -19,7 +19,8 @@ class ProcessorBase:
                  optimizer_center=None,
                  center_criterion=None,                 
                  loss_fn=None,
-                 scheduler=None):
+                 scheduler=None,
+                 start_epoch=0):
         self.config = cfg
         self.model = model        
         self.train_loader = train_loader
@@ -31,13 +32,14 @@ class ProcessorBase:
         self.scheduler = scheduler
         self.epochs = cfg.SOLVER.MAX_EPOCHS
         self.current_epoch = 0
+        self.start_epoch = start_epoch
         self.device = cfg.DEVICE
         self.init_meters()
         self.evaluator = R1_mAP_eval(cfg.DATASETS.NUMBER_OF_IMAGES_IN_QUERY, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)
-        self.eval_period = cfg.SOLVER.EVAL_PERIOD
-        self.checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
-        if optimizer is not None:
-            self.set_wandb()
+        # self.eval_period = cfg.SOLVER.EVAL_PERIOD
+        # self.checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
+        self.set_wandb()
+        self.load_pretrained_model()
         
         
     def init_meters(self):
@@ -48,6 +50,14 @@ class ProcessorBase:
         self.acc_meter.reset()
         self.loss_meter.reset()
         self.evaluator.reset()
+    
+    def load_pretrained_model(self):
+        if self.config.MODEL.PRETRAIN_CHOICE == 'resume':
+            checkpoint = torch.load(self.config.MODEL.PRETRAIN_PATH)
+            self.model.load_state_dict(checkpoint['model_state_dict'])
+            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+            self.start_epoch = checkpoint['epoch']        
     
     def train(self):
         self.model.to(self.device)
@@ -69,13 +79,7 @@ class ProcessorBase:
                 target_view = target_view.to(self.device)
                 feat = self.model(img, cam_label=camids, view_label=target_view)
                 self.evaluator.update((feat, pid, camid))
-        # for n_iter, (img, pid, camid, camids, target_view, imgpath) in enumerate(self.val_loader):
-        #     with torch.no_grad():
-        #         img = img.to(self.device)
-        #         camids = camids.to(self.device)
-        #         target_view = target_view.to(self.device)
-        #         feat = self.model(img, cam_label=camids, view_label=target_view)
-        #         self.evaluator.update((feat, pid, camid))
+        
         cmc, mAP, _, _, _, _, _ = self.evaluator.compute()
         print("Inference Results ")
         print("mAP: {:.3%}".format(mAP))
@@ -98,16 +102,22 @@ class ProcessorBase:
             .format(self.current_epoch, time_per_batch, self.train_loader.batch_size / time_per_batch))
         
     def log_to_wandb(self):
+        if not self.config.WANDB.USE:
+            return
         wandb.log({
             "Loss": self.loss_meter.avg,
             "Accuracy": self.acc_meter.avg,
             "Learning Rate": self.optimizer.param_groups[0]['lr']
         })
     def set_wandb(self):
-       # start a new wandb run to track this script
+        if not self.config.WANDB.USE:
+            return
+        
+       # start a new wandb run to track this experiment
         wandb.init(
             # set the wandb project where this run will be logged
-            project="reid-prototype",
+            project=self.config.WANDB.PROJECT,
+            name=self.config.WANDB.NAME,
 
             # track hyperparameters and run metadata
             config={
