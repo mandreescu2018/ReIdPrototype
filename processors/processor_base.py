@@ -107,7 +107,7 @@ class ProcessorBase:
         wandb.log({
             "Loss": self.loss_meter.avg,
             "Accuracy": self.acc_meter.avg,
-            "Learning Rate": self.optimizer.param_groups[0]['lr']
+            "Learning Rate": self.optimizer.param_groups[0]['lr'],
         })
     def set_wandb(self):
         if not self.config.WANDB.USE:
@@ -118,11 +118,13 @@ class ProcessorBase:
             # set the wandb project where this run will be logged
             project=self.config.WANDB.PROJECT,
             name=self.config.WANDB.NAME,
+            resume= "must" if self.config.MODEL.PRETRAIN_CHOICE == 'resume' else "allow",
+            id=self.config.WANDB.RUN_ID,
 
             # track hyperparameters and run metadata
             config={
             "learning_rate": self.config.SOLVER.BASE_LR,
-            "architecture": self.config.MODEL.NAME,
+            "architecture": self.config.MODEL.NAME, 
             "dataset": self.config.DATASETS.NAMES,
             "epochs": self.epochs,
             },
