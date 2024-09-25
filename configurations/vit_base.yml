@@ -44,6 +44,10 @@ TEST:
   WEIGHT: './logs/0321_market_vit_base/vit_transformer_resume_20.pth'
   NECK_FEAT: 'before'
   FEAT_NORM: 'yes'
-
+  
+WANDB: 
+  USE: False
+  PROJECT: 'transformer_reid'
+  NAME: '0321_market_vit_base'
 OUTPUT_DIR: './logs/0321_market_vit_base_new_ds'
-WANDB: False
+

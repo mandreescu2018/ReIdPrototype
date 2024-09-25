@@ -12,6 +12,7 @@ import torchvision.transforms as T
 import datasets
 from .market1501_prototype import Market1501_prototype
 from .msmt17_prototype import MSMT17_Prototype
+from .occ_duke_prototype import OCC_DukeMTMCreID
 from .base_dataset import ImageDataset
 from .image_dataset import ImageDataset_prototype
 from .data_transforms import Transforms
@@ -23,7 +24,7 @@ __factory = {
     'dukemtmc': None, # datasets.DukeMTMC,
     'msmt17': MSMT17_Prototype, # datasets.MSMT17
     'cuhk03': None, # datasets.CUHK03
-    'viper': None, # datasets.VIPeR
+    'occ_duke': OCC_DukeMTMCreID, 
 
 }
 
@@ -67,6 +68,7 @@ def make_dataloader_prototype(cfg):
         batch_size=cfg.SOLVER.IMS_PER_BATCH,
         num_workers=cfg.DATALOADER.NUM_WORKERS,
         sampler=RandomIdentitySampler(dataset.train.itertuples(index=False, name=None), cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_INSTANCE),
+        collate_fn=train_collate_fn,
         pin_memory=True,
         drop_last=True,
     )

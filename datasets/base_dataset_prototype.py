@@ -1,5 +1,13 @@
+import os.path as osp
+
 class BaseDataset_prototype(object):
     
+    def __init__(self) -> None:
+        self._dataset_dir = None
+        self._train_dir = None
+        self._query_dir = None
+        self._gallery_dir = None
+
     def get_imagedata_info(self, dataframe):
         """
         get images information
@@ -13,13 +21,47 @@ class BaseDataset_prototype(object):
                 len(dataframe), \
                 dataframe['camid'].nunique(), \
                 dataframe['trackid'].nunique()
-        # pids, cams, tracks = set(), set(), set()
-        # for _, pid, camid, trackid in data:
-        #     pids.add(pid)
-        #     cams.add(camid)
-        #     tracks.add(trackid)
+    
+    @property
+    def train_dir(self):
+        return self._train_dir
+    
+    @train_dir.setter
+    def train_dir(self, train_dir):
+        if not osp.exists(train_dir):
+            raise RuntimeError("'{}' is not available".format(train_dir))
+        self._train_dir = train_dir
 
-        # return len(pids), len(data), len(cams), len(tracks)
+    @property
+    def query_dir(self):
+        return self._query_dir
+    
+    @query_dir.setter
+    def query_dir(self, query_dir):
+        if not osp.exists(query_dir):
+            raise RuntimeError("'{}' is not available".format(query_dir))
+        self._query_dir = query_dir
+
+    @property
+    def gallery_dir(self):
+        return self._gallery_dir
+    
+    @gallery_dir.setter
+    def gallery_dir(self, gallery_dir):
+        if not osp.exists(gallery_dir):
+            raise RuntimeError("'{}' is not available".format(gallery_dir))
+        self._gallery_dir = gallery_dir
+
+    @property
+    def dataset_dir(self):
+        return self._dataset_dir
+    
+    @dataset_dir.setter
+    def dataset_dir(self, dataset_dir):
+        if not osp.exists(dataset_dir):
+            raise RuntimeError("'{}' is not available".format(dataset_dir))
+        self._dataset_dir = dataset_dir
+
     
     def load_data_statistics(self):
         

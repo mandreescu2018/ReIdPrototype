@@ -15,13 +15,14 @@ from .msmt17 import MSMT17
 from .base_dataset import ImageDataset
 from .data_transforms import Transforms
 from .sampler import RandomIdentitySampler
+from .occ_duke import OCC_DukeMTMCreID
 
 __factory = {
     'market1501': Market1501, # datasets.Market1501,
     'dukemtmc': None, # datasets.DukeMTMC,
     'msmt17': MSMT17, # datasets.MSMT17
     'cuhk03': None, # datasets.CUHK03
-    'viper': None, # datasets.VIPeR
+    'occ_duke': OCC_DukeMTMCreID,
 
 }
 

@@ -230,6 +230,9 @@ _C.WANDB.USE = False
 _C.WANDB.PROJECT = "reid"
 # Experiment name in wandb
 _C.WANDB.NAME = "baseline"
+# Run id in wandb
+_C.WANDB.RUN_ID = "00000"
+
 
 # ---------------------------------------------------------------------------- #
 # Misc options

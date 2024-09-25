@@ -35,14 +35,16 @@ def get_prototype_dataloader(cfg):
             break
 
 def main(cfg):
-    # get_classic_dataloader(cfg)
-    get_prototype_dataloader(cfg)
+    get_classic_dataloader(cfg)
+    # get_prototype_dataloader(cfg)
         
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Test dataset")
     # parser.add_argument("--config_file", type=str, default='configurations/vit_base.yml', help="Path to the configuration file")
-    parser.add_argument("--config_file", type=str, default='configurations/MSTM17/vit_base.yml', help="Path to the configuration file")
+    # parser.add_argument("--config_file", type=str, default='configurations/MSTM17/vit_base.yml', help="Path to the configuration file")
+    parser.add_argument("--config_file", type=str, default='configurations/OCC_Duke/vit_base.yml', help="Path to the configuration file")
+    # 'configurations\OCC_Duke\vit_base.yml'
     # "configurations\MSTM17\vit_base.yml"
     
     args = parser.parse_args()
