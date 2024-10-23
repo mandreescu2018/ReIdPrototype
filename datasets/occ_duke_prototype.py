@@ -6,16 +6,13 @@
 
 import glob
 import re
-# import urllib
-# import zipfile
 import pandas as pd
 import os.path as osp
 
-# from utils.iotools import mkdir_if_missing
-from.base_dataset_prototype import BaseDataset_prototype
+from .base_dataset import BaseDataset
 
 
-class OCC_DukeMTMCreID(BaseDataset_prototype):
+class OCC_DukeMTMCreID(BaseDataset):
     """
     DukeMTMC-reID
     Reference:
@@ -73,25 +70,4 @@ class OCC_DukeMTMCreID(BaseDataset_prototype):
         df['trackid'] = 1          
         
         return df
-    
-    def _process_dir2(self, dir_path, relabel=False):
-        img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
-        pattern = re.compile(r'([-\d]+)_c(\d)')
-
-        pid_container = set()
-        for img_path in img_paths:
-            pid, _ = map(int, pattern.search(img_path).groups())
-            pid_container.add(pid)
-        pid2label = {pid: label for label, pid in enumerate(pid_container)}
-
-        dataset = []
-        cam_container = set()
-        for img_path in img_paths:
-            pid, camid = map(int, pattern.search(img_path).groups())
-            assert 1 <= camid <= 8
-            camid -= 1  # index starts from 0
-            if relabel: pid = pid2label[pid]
-            dataset.append((img_path, self.pid_begin + pid, camid, 1))
-            cam_container.add(camid)
-        print(cam_container, 'cam_container')
-        return dataset
+        

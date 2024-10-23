@@ -5,10 +5,10 @@ import re
 import os.path as osp
 import pandas as pd
 
-from.base_dataset_prototype import BaseDataset_prototype
+from .base_dataset import BaseDataset
 
 
-class MSMT17_Prototype(BaseDataset_prototype):
+class MSMT17_Prototype(BaseDataset):
     """
     MSMT17
 

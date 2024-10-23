@@ -36,8 +36,6 @@ class ProcessorBase:
         self.device = cfg.DEVICE
         self.init_meters()
         self.evaluator = R1_mAP_eval(cfg.DATASETS.NUMBER_OF_IMAGES_IN_QUERY, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)
-        # self.eval_period = cfg.SOLVER.EVAL_PERIOD
-        # self.checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
         self.set_wandb()
         self.load_pretrained_model()
         
@@ -61,13 +59,39 @@ class ProcessorBase:
     
     def train(self):
         self.model.to(self.device)
+        self.logger = logging.getLogger("ReIDPrototype.train")
+        self.logger.info('Start training')
 
     def train_step(self):
         self.model.train()
 
     def validation_step(self):
         self.model.eval()
+        for n_iter, (img, pid, camid, camids, target_view, _) in enumerate(self.val_loader):
+            
+            with torch.no_grad():
+                img = img.to(self.device)
+                camids = camids.to(self.device)
+                target_view = target_view.to(self.device)
+                outputs = self.model(img)
+                self.evaluator.update((outputs, pid, camid))
+        
+        cmc, mAP, _, _, _, _, _ = self.evaluator.compute()
+        self.logger.info("Validation Results - Epoch: {}".format(self.current_epoch))
+        self.logger.info("mAP: {:.3%}".format(mAP))
+        for r in [1, 5, 10, 20]:
+            self.logger.info("CMC curve, Rank-{:<3}:{:.3%}".format(r, cmc[r - 1]))
+        torch.cuda.empty_cache()
+        
+        self.evaluator.reset()
+
+        return cmc, mAP
     
+    def zero_grading(self):
+        self.optimizer.zero_grad()
+        if self.optimizer_center is not None:
+            self.optimizer_center.zero_grad()
+
     def inference(self):        
         self.evaluator.reset()
         self.model.to(self.device)
