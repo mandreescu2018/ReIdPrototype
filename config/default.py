@@ -159,7 +159,7 @@ _C.SOLVER.SEED = 1234
 # Momentum
 _C.SOLVER.MOMENTUM = 0.9
 # Margin of triplet loss
-_C.SOLVER.MARGIN = 0.3
+_C.SOLVER.MARGIN = None
 # Learning rate of SGD to learn the centers of center loss
 _C.SOLVER.CENTER_LR = 0.5
 # Balanced weight of center loss
@@ -195,6 +195,27 @@ _C.SOLVER.EVAL_PERIOD = 10
 _C.SOLVER.IMS_PER_BATCH = 64
 # feature_dim
 _C.SOLVER.FEATURE_DIMENSION = 2048
+
+# ---------------------------------------------------------------------------- #
+# Loss
+# ---------------------------------------------------------------------------- #
+_C.LOSS = CN()
+
+_C.LOSS.METRIC_LOSS_TYPE = 'triplet'
+# Id loss type, options: 'softmax','triplet'
+_C.LOSS.ID_LOSS_TYPE = 'softmax'
+# If train loss include center loss, options: 'True' or 'False'. 
+# Loss with center loss has different optimizer configuration
+_C.LOSS.CENTER_LOSS = False
+# If train with label smooth, options: 'on', 'off'
+_C.LOSS.IF_LABELSMOOTH = 'on'
+# weigth of ID loss calculation
+_C.LOSS.ID_LOSS_WEIGHT = 1.0
+# weigth of Triplet loss calculation
+_C.LOSS.TRIPLET_LOSS_WEIGHT = 1.0
+# Margin of triplet loss
+_C.LOSS.TRIPLET_MARGIN = None
+
 
 # ---------------------------------------------------------------------------- #
 # TEST

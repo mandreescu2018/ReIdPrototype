@@ -3,3 +3,4 @@ torchaudio==2.2.0+cu118
 torchvision==0.17.0+cu118
 yacs
 pandas
+timm

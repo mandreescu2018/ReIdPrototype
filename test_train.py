@@ -2,14 +2,14 @@ import torch
 import argparse
 from config import cfg
 from utils import set_seeds, setup_logger
-from datasets import make_dataloader
+# from datasets import make_dataloader
 from models import get_model
 from solver import create_scheduler
 from processors.processor_transformer import ProcessorTransformer
-from loss import CenterLoss, MultipleLoss
+from loss import MultipleLoss, CenterLoss
 from solver.make_optimizer import make_optimizer
 
-from datasets.make_dataloader_prototype import make_dataloader_prototype
+from datasets.make_dataloader import make_dataloader
 
 if __name__ == '__main__':
 
@@ -37,9 +37,7 @@ if __name__ == '__main__':
     logger.info(f"Saving model in the path :{cfg.OUTPUT_DIR}")
     logger.info(cfg)
 
-    # datasets related
-    # train_loader, test_loader, num_classes, number_of_cameras, number_of_camera_tracks, query_num = make_dataloader(cfg)
-    train_loader, test_loader, num_classes, number_of_cameras, number_of_camera_tracks, query_num = make_dataloader_prototype(cfg)
+    train_loader, test_loader, num_classes, number_of_cameras, number_of_camera_tracks, query_num = make_dataloader(cfg)
     
     cfg.DATASETS.NUMBER_OF_CLASSES = num_classes
     cfg.DATASETS.NUMBER_OF_CAMERAS = number_of_cameras
@@ -48,16 +46,22 @@ if __name__ == '__main__':
 
     # Model
     model = get_model(cfg)
-    model.to(cfg.DEVICE)
-    
+    # model.to(cfg.DEVICE)
+    # print(model)
 
     # Losses
     loss_fn = MultipleLoss(cfg)
-    center_criterion = CenterLoss(cfg)  # center loss
+    if cfg.LOSS.CENTER_LOSS:
+        center_criterion = CenterLoss(cfg)  # center loss
+        optimizer_center = torch.optim.SGD(center_criterion.parameters(), lr=cfg.SOLVER.CENTER_LR)
+
+    # loss_fn, center_criterion = make_loss(cfg, num_classes=num_classes)
+    # loss_fn = make_loss(cfg, num_classes=num_classes)
+    # center_criterion2 = CenterLoss(cfg)
 
     # Optimizers
     optimizer = make_optimizer(cfg, model)
-    optimizer_center = torch.optim.SGD(center_criterion.parameters(), lr=cfg.SOLVER.CENTER_LR)
+    
     scheduler = create_scheduler(cfg, optimizer)    
 
     proc = ProcessorTransformer(cfg, 

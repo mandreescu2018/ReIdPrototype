@@ -12,10 +12,10 @@ import pandas as pd
 import os.path as osp
 
 # from utils.iotools import mkdir_if_missing
-from.base_dataset_prototype import BaseDataset_prototype
+from .base_dataset import BaseDataset
 
 
-class DukeMTMCreID(BaseDataset_prototype):
+class DukeMTMCreID(BaseDataset):
     """
     DukeMTMC-reID
     Reference:

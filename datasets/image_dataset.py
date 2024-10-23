@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 import pandas as pd
 
 
-class ImageDataset_prototype(Dataset):
+class ImageDataset(Dataset):
         def __init__(self, dataframe, transform):
             self.dataframe = dataframe
             self.transform = transform

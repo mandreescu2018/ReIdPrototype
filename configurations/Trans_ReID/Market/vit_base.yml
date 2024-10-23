@@ -1,36 +1,35 @@
 MODEL:
-  PRETRAIN_CHOICE: 'imagenet'
   PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
-  # PRETRAIN_PATH: './logs/msmt17_vit_base/vit_transformer_resume_100.pth'
   NAME: 'vit_transformer'
   TRANSFORMER_TYPE: 'vit_base_patch16_224_TransReID'
   IF_LABELSMOOTH: 'off'
-  NO_MARGIN: True
-  STRIDE_SIZE: [16, 16]
 
 SOLVER:
   OPTIMIZER_NAME: 'SGD'
   MAX_EPOCHS: 120
   BASE_LR: 0.008
   IMS_PER_BATCH: 64
-  FEATURE_DIMENSION: 2048
   WARMUP_METHOD: 'linear'
-  LARGE_FC_LR: False
+  FEATURE_DIMENSION: 2048
+  MARGIN: None
+  LOG_PERIOD: 50
+  EVAL_PERIOD: 10
   WEIGHT_DECAY:  1e-4
   WEIGHT_DECAY_BIAS: 1e-4
   BIAS_LR_FACTOR: 2
-  LOG_PERIOD: 50
-  EVAL_PERIOD: 20
-  CHECKPOINT_PERIOD: 10
+
+LOSS:
+  CENTER_LOSS: True
 
 INPUT:
   SIZE_TRAIN: [256, 128]
   SIZE_TEST: [256, 128]
-  HF_PROB: 0.5 # random horizontal flip
-  RE_PROB: 0.5 # random erasing
-  PADDING: 10
+  # PIXEL_MEAN: [0.485, 0.456, 0.406]
+  # PIXEL_STD: [0.229, 0.224, 0.225]
   PIXEL_MEAN: [0.5, 0.5, 0.5]
   PIXEL_STD: [0.5, 0.5, 0.5]
+  HF_PROB: 0.5 # random horizontal flip
+  PADDING: 10
 
 DATALOADER:
   SAMPLER: 'softmax_triplet'
@@ -38,21 +37,21 @@ DATALOADER:
   NUM_WORKERS: 8
 
 DATASETS:
-  NAMES: msmt17
+  NAMES: market1501
   ROOT_DIR: ('D:\datasets')
-  DIR: 'MSMT17_V1'
+  DIR: 'market1501'
 
 TEST:
   EVAL: True
   IMS_PER_BATCH: 256
   RE_RANKING: False
-  WEIGHT: './logs/msmt17_vit_base/vit_transformer_resume_20.pth'
+  WEIGHT: './logs/0321_market_vit_base/vit_transformer_resume_20.pth'
   NECK_FEAT: 'before'
   FEAT_NORM: 'yes'
   
 WANDB: 
-  USE: True
-  PROJECT: 'transformer_reid_msmt17'
-  NAME: 'msmt17_vit_base_bis'
-OUTPUT_DIR: './logs/msmt17_vit_base'
+  USE: False
+  PROJECT: 'transformer_reid_market'
+  NAME: '0321_market_vit_base'
+OUTPUT_DIR: './logs/0321_market_vit_base_new_ds'
 

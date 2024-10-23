@@ -4,7 +4,6 @@ MODEL:
   # PRETRAIN_PATH: './logs/occ_duke_vit_base/vit_transformer_resume_80.pth'
   METRIC_LOSS_TYPE: 'triplet'
   IF_LABELSMOOTH: 'off'
-  IF_WITH_CENTER: 'no'
   NAME: 'vit_transformer'
   NO_MARGIN: True
   DEVICE_ID: ('5')
@@ -43,6 +42,9 @@ SOLVER:
   WEIGHT_DECAY:  1e-4
   WEIGHT_DECAY_BIAS: 1e-4
   BIAS_LR_FACTOR: 2
+
+LOSS:
+  CENTER_LOSS: True
 
 TEST:
   EVAL: True
