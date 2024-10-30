@@ -1,59 +1,80 @@
-import torch
 import torch.nn as nn
 from .triplet_loss import TripletLoss
 from .softmax_loss import CrossEntropyLabelSmooth
 
-class MultipleLoss:
+class GeneralLoss:
+    def __init__(self, cfg) -> None:
+        self.config = cfg
+        self._loss = None
+    
+    @property
+    def loss(self):
+        raise NotImplementedError
+
+    def __call__(self, score, feat, target, target_cam):
+        return self.compute_loss(score, feat, target, target_cam) * self.weight
+
+class TripletLossWrap(GeneralLoss):
+    def __init__(self, cfg) -> None:
+        super().__init__(cfg)
+        self.weight = cfg.LOSS.TRIPLET_LOSS_WEIGHT
+    
+    @property
+    def loss(self):
+        if self._loss == None:
+            self._loss = TripletLoss(self.config.LOSS.TRIPLET_MARGIN)
+        return self._loss
+    
+    def compute_loss(self, score, feat, target, target_cam):
+        if isinstance(feat, list):
+            loss = [self.loss(feats, target)[0] for feats in feat[1:]]
+            loss = sum(loss) / len(loss)
+            loss = 0.5 * loss + 0.5 * self.loss(feat[0], target)[0]
+        else:
+            loss = self.loss(feat, target)[0]
+        return loss
+
+class CrossEntropyLossWrap(GeneralLoss):
+    def __init__(self, cfg) -> None:
+        super().__init__(cfg)
+        self.weight = cfg.LOSS.ID_LOSS_WEIGHT
+    
+    @property
+    def loss(self):
+        if self._loss == None:
+            if  self.config.LOSS.IF_LABELSMOOTH == 'on':
+                self._loss = CrossEntropyLabelSmooth(self.cfg.DATASETS.NUMBER_OF_CLASSES)
+            else:
+                self._loss = nn.CrossEntropyLoss()
+        return self._loss
+
+    def compute_loss(self, score, feat, target, target_cam):
+        if isinstance(score, list):
+            loss = [self.loss(scor, target) for scor in score[1:]]
+            loss = sum(loss) / len(loss)
+            loss = 0.5 * loss + 0.5 * self.loss(score[0], target)
+        else:
+            loss = self.loss(score, target)
+        return loss
+
+class LossComposer:
     def __init__(self, cfg) -> None:
         self.config = cfg
         self.loss_fns = []
-        self.sampler = cfg.DATALOADER.SAMPLER
-        self._triplet_loss = None
-        self._cross_entropy_loss = None
+        self.load_losses()
+
+    def add_loss_fn(self, loss_fn):
+        self.loss_fns.append(loss_fn)
+
+    def load_losses(self):
+        self.add_loss_fn(CrossEntropyLossWrap(self.config))
         
-    @property
-    def triplet_loss(self):
-        if self._triplet_loss is None:
-            self._triplet_loss = TripletLoss(self.config.SOLVER.MARGIN)
-        return self._triplet_loss
-    
-    @property
-    def cross_entropy_loss(self):
-        if self._cross_entropy_loss == None:
-            if  self.config.MODEL.IF_LABELSMOOTH == 'on':
-                self._cross_entropy_loss = CrossEntropyLabelSmooth(self.cfg.DATASETS.NUMBER_OF_CLASSES)
-            else:
-                self._cross_entropy_loss = nn.CrossEntropyLoss()
-        return self._cross_entropy_loss
-
-
-    def loos_fn(self):
-        return self.loss_fns
-    
-    def compute_tripple_loss(self, feat, target):
-        if isinstance(feat, list):
-            loss = [self.triplet_loss(feats, target)[0] for feats in feat[1:]]
-            loss = sum(loss) / len(loss)
-            loss = 0.5 * loss + 0.5 * self.triplet_loss(feat[0], target)[0]
-        else:
-            loss = self.triplet_loss(feat, target)[0]
-        return loss
-
-    def compute_cross_entropy_loss(self, score, target):
-        if isinstance(score, list):
-            loss = [self.cross_entropy_loss(scor, target) for scor in score[1:]]
-            loss = sum(loss) / len(loss)
-            loss = 0.5 * loss + 0.5 * self.cross_entropy_loss(score[0], target)
-        else:
-            loss = self.cross_entropy_loss(score, target)
-        return loss
+        if 'triplet' in self.config.LOSS.METRIC_LOSS_TYPE:
+            self.add_loss_fn(TripletLossWrap(self.config))
 
     def __call__(self, score, feat, target, target_cam):
-
-        cross_entropy_loss = self.compute_cross_entropy_loss(score, target)                
-        tri_loss = self.compute_tripple_loss(feat, target)
-
-        ce_weight = self.config.MODEL.ID_LOSS_WEIGHT
-        tri_weight = self.config.MODEL.TRIPLET_LOSS_WEIGHT
-
-        return ce_weight * cross_entropy_loss + tri_weight * tri_loss
+        final_loss = 0
+        for loss_fn in self.loss_fns:
+            final_loss += loss_fn(score, feat, target, target_cam)
+        
+        return final_loss

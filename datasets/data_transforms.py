@@ -11,7 +11,7 @@ class Transforms:
             T.RandomCrop(cfg.INPUT.SIZE_TRAIN),
             T.ToTensor(),
             T.Normalize(mean=cfg.INPUT.PIXEL_MEAN, std=cfg.INPUT.PIXEL_STD),
-            # T.RandomErasing(p=cfg.INPUT.RE_PROB)
+            # T.RandomErasing(p=cfg.INPUT.RE_PROB),
             RandomErasing(probability=cfg.INPUT.RE_PROB, mode='pixel', max_count=1, device='cpu'),
         ])
         

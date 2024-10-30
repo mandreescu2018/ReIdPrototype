@@ -2,7 +2,7 @@ MODEL:
   PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
   NAME: 'vit_transformer'
   TRANSFORMER_TYPE: 'vit_base_patch16_224_TransReID'
-  IF_LABELSMOOTH: 'off'
+  
 
 SOLVER:
   OPTIMIZER_NAME: 'SGD'
@@ -11,7 +11,6 @@ SOLVER:
   IMS_PER_BATCH: 64
   WARMUP_METHOD: 'linear'
   FEATURE_DIMENSION: 2048
-  MARGIN: None
   LOG_PERIOD: 50
   EVAL_PERIOD: 10
   WEIGHT_DECAY:  1e-4
@@ -20,6 +19,8 @@ SOLVER:
 
 LOSS:
   CENTER_LOSS: True
+  TRIPLET_MARGIN: None
+  IF_LABELSMOOTH: 'off'
 
 INPUT:
   SIZE_TRAIN: [256, 128]
@@ -38,7 +39,6 @@ DATALOADER:
 
 DATASETS:
   NAMES: market1501
-  ROOT_DIR: ('D:\datasets')
   DIR: 'market1501'
 
 TEST:

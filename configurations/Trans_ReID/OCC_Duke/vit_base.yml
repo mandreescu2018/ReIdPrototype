@@ -21,7 +21,6 @@ INPUT:
 
 DATASETS:
   NAMES: ('occ_duke')
-  ROOT_DIR: ('D:\datasets')
   DIR: 'occluded_duke'
 
 DATALOADER:

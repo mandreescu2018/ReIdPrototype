@@ -4,8 +4,6 @@ MODEL:
   # PRETRAIN_PATH: './logs/msmt17_vit_base/vit_transformer_resume_100.pth'
   NAME: 'vit_transformer'
   TRANSFORMER_TYPE: 'vit_base_patch16_224_TransReID'
-  IF_LABELSMOOTH: 'off'
-  NO_MARGIN: True
   STRIDE_SIZE: [16, 16]
 
 SOLVER:
@@ -25,7 +23,9 @@ SOLVER:
   MARGIN: None
 
 LOSS:
-  CENTER_LOSS: True
+  CENTER_LOSS: False
+  TRIPLET_MARGIN: None
+  IF_LABELSMOOTH: 'off'
 
 INPUT:
   SIZE_TRAIN: [256, 128]
@@ -43,7 +43,6 @@ DATALOADER:
 
 DATASETS:
   NAMES: msmt17
-  ROOT_DIR: ('D:\datasets')
   DIR: 'MSMT17_V1'
 
 TEST:

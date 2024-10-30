@@ -35,17 +35,11 @@ _C.MODEL.NECK = 'bnneck'
 # If train loss include center loss, options: 'yes' or 'no'. Loss with center loss has different optimizer configuration
 _C.MODEL.IF_WITH_CENTER = 'no'
 
-_C.MODEL.ID_LOSS_TYPE = 'softmax'
-_C.MODEL.ID_LOSS_WEIGHT = 1.0
-_C.MODEL.TRIPLET_LOSS_WEIGHT = 1.0
-
-_C.MODEL.METRIC_LOSS_TYPE = 'triplet'
 # If train with multi-gpu ddp mode, options: 'True', 'False'
 _C.MODEL.DIST_TRAIN = False
 # If train with soft triplet loss, options: 'True', 'False'
 _C.MODEL.NO_MARGIN = False
-# If train with label smooth, options: 'on', 'off'
-_C.MODEL.IF_LABELSMOOTH = 'on'
+
 # If train with arcface loss, options: 'True', 'False'
 _C.MODEL.COS_LAYER = False
 
@@ -116,7 +110,7 @@ _C.DATASETS = CN()
 # List of the dataset names for training, as present in paths_catalog.py
 _C.DATASETS.NAMES = ('market1501')
 # Root directory where datasets should be used (and downloaded if not found)
-_C.DATASETS.ROOT_DIR = ('../data')
+_C.DATASETS.ROOT_DIR = 'D:\datasets'
 # folder where images are stored
 _C.DATASETS.DIR = ('market1501')
 
@@ -207,6 +201,8 @@ _C.LOSS.ID_LOSS_TYPE = 'softmax'
 # If train loss include center loss, options: 'True' or 'False'. 
 # Loss with center loss has different optimizer configuration
 _C.LOSS.CENTER_LOSS = False
+# Balanced weight of center loss
+_C.LOSS.CENTER_LOSS_WEIGHT = 0.0005
 # If train with label smooth, options: 'on', 'off'
 _C.LOSS.IF_LABELSMOOTH = 'on'
 # weigth of ID loss calculation

@@ -84,7 +84,7 @@ class build_transformer(nn.Module):
         self.gap = nn.AdaptiveAvgPool2d(1)
 
         self.num_classes = cfg.DATASETS.NUMBER_OF_CLASSES
-        self.ID_LOSS_TYPE = cfg.MODEL.ID_LOSS_TYPE
+        self.ID_LOSS_TYPE = cfg.LOSS.ID_LOSS_TYPE
         self.classifier = nn.Linear(self.in_planes, self.num_classes, bias=False)
         self.classifier.apply(weights_init_classifier)
 
@@ -194,7 +194,7 @@ class build_transformer_local(nn.Module):
         )
 
         self.num_classes = cfg.DATASETS.NUMBER_OF_CLASSES
-        self.ID_LOSS_TYPE = cfg.MODEL.ID_LOSS_TYPE
+        self.ID_LOSS_TYPE = cfg.LOSS.ID_LOSS_TYPE
         # if self.ID_LOSS_TYPE == 'arcface':
         #     print('using {} with s:{}, m: {}'.format(self.ID_LOSS_TYPE,cfg.SOLVER.COSINE_SCALE,cfg.SOLVER.COSINE_MARGIN))
         #     self.classifier = Arcface(self.in_planes, self.num_classes,

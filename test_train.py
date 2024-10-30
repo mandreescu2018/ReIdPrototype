@@ -6,10 +6,10 @@ from utils import set_seeds, setup_logger
 from models import get_model
 from solver import create_scheduler
 from processors.processor_transformer import ProcessorTransformer
-from loss import MultipleLoss, CenterLoss
+from loss import LossComposer, CenterLoss
 from solver.make_optimizer import make_optimizer
 
-from datasets.make_dataloader import make_dataloader
+from datasets import make_dataloader
 
 if __name__ == '__main__':
 
@@ -17,7 +17,6 @@ if __name__ == '__main__':
     parser.add_argument(
         "--config_file", default="configurations/vit_base.yml", help="path to config file", type=str
     )
-    
     
     args = parser.parse_args()
 
@@ -46,18 +45,19 @@ if __name__ == '__main__':
 
     # Model
     model = get_model(cfg)
-    # model.to(cfg.DEVICE)
     # print(model)
 
     # Losses
-    loss_fn = MultipleLoss(cfg)
-    if cfg.LOSS.CENTER_LOSS:
-        center_criterion = CenterLoss(cfg)  # center loss
-        optimizer_center = torch.optim.SGD(center_criterion.parameters(), lr=cfg.SOLVER.CENTER_LR)
-
-    # loss_fn, center_criterion = make_loss(cfg, num_classes=num_classes)
-    # loss_fn = make_loss(cfg, num_classes=num_classes)
-    # center_criterion2 = CenterLoss(cfg)
+    loss_fn = LossComposer(cfg)
+    center_criterion = None
+    optimizer_center = None
+    
+    # if cfg.LOSS.CENTER_LOSS:
+    #     center_criterion = CenterLoss(cfg)  # center loss
+    #     optimizer_center = torch.optim.SGD(center_criterion.parameters(), lr=cfg.SOLVER.CENTER_LR)
+    # else:
+    #     center_criterion = None
+    #     optimizer_center = None
 
     # Optimizers
     optimizer = make_optimizer(cfg, model)

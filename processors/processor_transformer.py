@@ -36,9 +36,18 @@ class ProcessorTransformer(ProcessorBase):
             with amp.autocast(self.device):
                 score, feat = self.model(img, target, cam_label=target_cam, view_label=target_view)
                 loss = self.loss_fn(score, feat, target, target_cam)
+                # if self.optimizer_center is not None:
+                #     center_loss = self.center_criterion(feat, target)
             self.scaler.scale(loss).backward()
             self.scaler.step(self.optimizer)
             self.scaler.update()
+            
+            if self.optimizer_center is not None:
+                for param in self.center_criterion.parameters():
+                    param.grad.data *= (1. / self.config.LOSS.CENTER_LOSS_WEIGHT)
+                self.scaler.step(self.optimizer_center)
+                self.scaler.update()
+            
 
             score_element = score[0] if isinstance(score, list) else score
             acc = (score_element.max(1)[1] == target).float().mean()
