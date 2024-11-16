@@ -1,24 +1,24 @@
 import torch
 import torch.nn as nn
 from loss.loss_factory import LossComposer
+from config import cfg
 
-# Define some example loss functions
-reconstruction_loss = nn.MSELoss()
-classification_loss = nn.CrossEntropyLoss()
+if __name__ == '__main__':
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="ReID Prototype Training")
+    parser.add_argument(
+        "--config_file", default="configurations/MobileNet/Market/mobilenet.yml", help="path to config file", type=str
+    )
+    
+    args = parser.parse_args()
 
-# Combine these losses with specific weights
-composer = LossComposer(
-    loss_fns=[reconstruction_loss, classification_loss],
-    weights=[0.5, 0.5]
-)
+    if args.config_file:
+        cfg.merge_from_file(args.config_file)
 
-# Example model outputs
-output_reconstruction = torch.randn(10, 3)
-target_reconstruction = torch.randn(10, 3)
+    # Define loss functions
+    # loss_composer = DynamicLossComposer(cfg)
+    # loss_composer.instantiate_losses()
+    # print(loss_composer.loss_functions)
 
-output_classification = torch.randn(10, 5)
-target_classification = torch.randint(0, 5, (10,))
-
-# Compute the combined loss
-loss = composer(output_reconstruction, target_reconstruction, output_classification, target_classification)
-print("Combined Loss:", loss.item())
+    

@@ -55,9 +55,10 @@ class MobileNetV2(nn.Module):
     Reference:
     Sandler et al. MobileNetV2: Inverted Residuals and Linear Bottlenecks. CVPR 2018.
     """
-    def __init__(self, num_classes, loss={'xent'}, **kwargs):
+    def __init__(self, cfg, loss={'xent'}):
         super(MobileNetV2, self).__init__()
         self.loss = loss
+        self.num_classes = cfg.DATASETS.NUMBER_OF_CLASSES
         self.conv1 = ConvBlock(3, 32, 3, s=2, p=1)
         self.block2 = Bottleneck(32, 16, 1, 1)
         self.block3 = nn.Sequential(
@@ -87,7 +88,7 @@ class MobileNetV2(nn.Module):
         )
         self.block8 = Bottleneck(160, 320, 6, 1)
         self.conv9 = ConvBlock(320, 1280, 1)
-        self.classifier = nn.Linear(1280, num_classes)
+        self.classifier = nn.Linear(1280, self.num_classes)
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.flatten = nn.Flatten()

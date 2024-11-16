@@ -4,11 +4,51 @@ import torch
 import torch.nn as nn
 from torch.cuda import amp
 import logging
-from utils import AverageMeter
+from utils import AverageMeter, WandbLogger
 from utils.metrics import R1_mAP_eval
-import wandb
+from utils.tensorboard_logger import TensoboardLogger
+
 # from utils import Saver
 
+class ModelInputProcessor:
+    def __init__(self, cfg):
+        """
+        Initializes the ModelInputProcessor with configuration for different inputs.
+        
+        Args:
+            cfg config object: Configuration for model inputs.
+        """
+        self.config = cfg
+        self.personid_key = cfg.PROCESSOR.TARGET_KEY
+        self.batch = None
+
+    def target(self):
+        """
+        Returns the person ID.
+        
+        Args:
+            input batch 
+        
+        Returns:
+            tensor: person ID.
+        """
+        return self.batch[self.personid_key]
+    
+    def process(self, batch):
+        """
+        Processes the batch based on the configuration.
+        
+        Args:
+            input batch 
+        
+        Returns:
+            tuple: Processed inputs formatted as required by the model.
+        """
+        self.batch = batch
+        inputs = []
+        for key in range(self.config.PROCESSOR.INPUT_KEYS):
+            inputs.append(batch[key])
+        return tuple(inputs), self.target()
 
 class ProcessorBase:
     def __init__(self, cfg,                   
@@ -36,10 +76,11 @@ class ProcessorBase:
         self.device = cfg.DEVICE
         self.init_meters()
         self.evaluator = R1_mAP_eval(cfg.DATASETS.NUMBER_OF_IMAGES_IN_QUERY, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)
-        self.set_wandb()
-        self.load_pretrained_model()
-        
-        
+        self.input_processor = ModelInputProcessor(cfg)
+        if self.config.WANDB.USE and not self.config.MODEL.PRETRAIN_CHOICE == 'test':
+            self.wlogger = WandbLogger(cfg)
+        self.tensorboard_logger = TensoboardLogger(cfg.OUTPUT_DIR)
+                
     def init_meters(self):
         self.acc_meter = AverageMeter()
         self.loss_meter = AverageMeter()
@@ -47,42 +88,65 @@ class ProcessorBase:
     def reset_metrics(self):
         self.acc_meter.reset()
         self.loss_meter.reset()
-        self.evaluator.reset()
-    
-    def load_pretrained_model(self):
-        if self.config.MODEL.PRETRAIN_CHOICE == 'resume':
-            checkpoint = torch.load(self.config.MODEL.PRETRAIN_PATH)
-            self.model.load_state_dict(checkpoint['model_state_dict'])
-            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-            self.start_epoch = checkpoint['epoch']        
+        self.evaluator.reset()    
     
     def train(self):
-        self.model.to(self.device)
         self.logger = logging.getLogger("ReIDPrototype.train")
         self.logger.info('Start training')
 
     def train_step(self):
         self.model.train()
 
-    def validation_step(self):
+    # def model_evaluation(self):
+    #     self.model.eval()
+    #     for n_iter, batch in enumerate(self.train_loader):
+    #         # Prepare inputs and targets
+    #         inputs, target = self.input_processor.process(batch)
+    #         # Move data to the correct device
+    #         inputs = tuple(input.to(self.device) for input in inputs)
+    #         target = target.to(self.device)
+
+    #         with torch.no_grad():
+    #             pid = batch[self.config.DATALOADER.BATCH_PID_INDEX]
+    #             camid = batch[self.config.DATALOADER.BATCH_CAM_INDEX]
+    #             outputs = self.model(*inputs)
+    #             feat = outputs[0] if isinstance(outputs, (list, tuple)) else outputs
+    #             self.evaluator.update((feat, pid, camid))
+        
+    #     cmc, mAP, _, _, _, _, _ = self.evaluator.compute()
+
+    #     return cmc, mAP
+    
+    def model_evaluation(self):
         self.model.eval()
-        for n_iter, (img, pid, camid, camids, target_view, _) in enumerate(self.val_loader):
-            
+        for n_iter, batch in enumerate(self.val_loader):
             with torch.no_grad():
-                img = img.to(self.device)
-                camids = camids.to(self.device)
-                target_view = target_view.to(self.device)
-                outputs = self.model(img)
-                self.evaluator.update((outputs, pid, camid))
+
+                pid = batch[self.config.PROCESSOR.TARGET_KEY]
+                camid = batch[self.config.DATALOADER.BATCH_CAM_INDEX]
+                inputs = []
+                for item in self.config.INPUT.EVAL_KEYS:
+                    if item != 'NaN':
+                        inputs.append(batch[item].to(self.device))
+                    else:
+                        inputs.append(None)
+                
+                outputs = self.model(*inputs)
+                feat = outputs[0] if isinstance(outputs, (list, tuple)) else outputs
+                self.evaluator.update((feat, pid, camid))
         
         cmc, mAP, _, _, _, _, _ = self.evaluator.compute()
+
+        return cmc, mAP
+
+    def validation_step(self):
+        cmc, mAP = self.model_evaluation()
+        
         self.logger.info("Validation Results - Epoch: {}".format(self.current_epoch))
         self.logger.info("mAP: {:.3%}".format(mAP))
         for r in [1, 5, 10, 20]:
             self.logger.info("CMC curve, Rank-{:<3}:{:.3%}".format(r, cmc[r - 1]))
         torch.cuda.empty_cache()
-        
         self.evaluator.reset()
 
         return cmc, mAP
@@ -92,23 +156,19 @@ class ProcessorBase:
         if self.optimizer_center is not None:
             self.optimizer_center.zero_grad()
 
+    def dump_metrics_data_to_tensorboard(self):
+        self.tensorboard_logger.dump_metric_tb(self.loss_meter.avg, self.current_epoch, f'losses', f'loss')        
+        self.tensorboard_logger.dump_metric_tb(self.acc_meter.avg, self.current_epoch, f'losses', f'acc')
+        self.tensorboard_logger.dump_metric_tb(self.optimizer.param_groups[0]['lr'], self.current_epoch, f'losses', f'lr')
+
     def inference(self):        
         self.evaluator.reset()
-        self.model.to(self.device)
-        self.model.eval()
-        for n_iter, (img, pid, camid, camids, target_view, imgpath) in enumerate(self.val_loader):
-            with torch.no_grad():
-                img = img.to(self.device)
-                camids = camids.to(self.device)
-                target_view = target_view.to(self.device)
-                feat = self.model(img, cam_label=camids, view_label=target_view)
-                self.evaluator.update((feat, pid, camid))
-        
-        cmc, mAP, _, _, _, _, _ = self.evaluator.compute()
+        cmc, mAP = self.model_evaluation()
+       
         print("Inference Results ")
-        print("mAP: {:.3%}".format(mAP))
+        print(f"mAP: {mAP:.3%}")
         for r in [1, 5, 10, 20]:
-            print("CMC curve, Rank-{:<3}:{:.3%}".format(r, cmc[r - 1]))
+            print(f"CMC curve, Rank-{r:<3}:{cmc[r - 1]:.3%}")
 
     def log_training_details(self, n_iter):
         if (n_iter + 1) % self.config.SOLVER.LOG_PERIOD == 0:
@@ -122,37 +182,14 @@ class ProcessorBase:
 
     def on_epoch_end(self, start_time):
         time_per_batch = (time.time() - start_time) / len(self.train_loader)
-        self.logger.info("Epoch {} done. Time per batch: {:.3f}[s] Speed: {:.1f}[samples/s]"
-            .format(self.current_epoch, time_per_batch, self.train_loader.batch_size / time_per_batch))
+        speed = self.train_loader.batch_size / time_per_batch
+        self.logger.info(f"Epoch {self.current_epoch} done. Time per batch: {time_per_batch:.3f}[s] Speed: {speed:.1f}[samples/s]")
         
     def log_to_wandb(self):
         if not self.config.WANDB.USE:
             return
-        wandb.log({
-            "Loss": self.loss_meter.avg,
-            "Accuracy": self.acc_meter.avg,
-            "Learning Rate": self.optimizer.param_groups[0]['lr'],
-        })
-    def set_wandb(self):
-        if not self.config.WANDB.USE:
-            return
+        self.wlogger.log_results(self.loss_meter.avg, self.acc_meter.avg, self.optimizer)
         
-       # start a new wandb run to track this experiment
-        wandb.init(
-            # set the wandb project where this run will be logged
-            project=self.config.WANDB.PROJECT,
-            name=self.config.WANDB.NAME,
-            resume= "must" if self.config.MODEL.PRETRAIN_CHOICE == 'resume' else "allow",
-            id=self.config.WANDB.RUN_ID,
-
-            # track hyperparameters and run metadata
-            config={
-            "learning_rate": self.config.SOLVER.BASE_LR,
-            "architecture": self.config.MODEL.NAME, 
-            "dataset": self.config.DATASETS.NAMES,
-            "epochs": self.epochs,
-            },
-        )
     def save_model_for_resume(self,
                           path: str):
         torch.save({

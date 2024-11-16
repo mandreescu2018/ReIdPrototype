@@ -51,7 +51,7 @@ _C.MODEL.TRANSFORMER_TYPE = 'None'
 _C.MODEL.STRIDE_SIZE = [16, 16]
 
 # JPM Parameter
-_C.MODEL.JPM = False
+# _C.MODEL.JPM = False
 _C.MODEL.SHIFT_NUM = 5
 _C.MODEL.SHUFFLE_GROUP = 2
 _C.MODEL.DEVIDE_LENGTH = 5
@@ -103,6 +103,10 @@ _C.INPUT.PIXEL_STD = [0.229, 0.224, 0.225]
 # Value of padding size
 _C.INPUT.PADDING = 10
 
+_C.INPUT.TRAIN_KEYS = [0, 1, 2, 3]
+_C.INPUT.EVAL_KEYS = [0, 1, 2, 3]
+
+
 # -----------------------------------------------------------------------------
 # Dataset
 # -----------------------------------------------------------------------------
@@ -133,6 +137,24 @@ _C.DATALOADER.K = 8
 _C.DATALOADER.NUM_TEST_IMAGES = 8
 # random select 8 images of each tracklet for train
 _C.DATALOADER.NUM_TRAIN_IMAGES = 8
+# Index of the image in btach output by dataloader
+_C.DATALOADER.BATCH_IMAGE_IDEX = 0
+# Index of the target in batch output by dataloader
+_C.DATALOADER.BATCH_PID_INDEX = 1
+# Index of the camera in batch output by dataloader
+_C.DATALOADER.BATCH_CAM_INDEX = 2
+# Index of the camera tensor in batch output by dataloader
+_C.DATALOADER.BATCH_CAMS_INDEX = 3
+# Index of the target view in batch output by dataloader
+_C.DATALOADER.BATCH_TARGET_VIEW_INDEX = 4
+_C.DATALOADER.BATCH_IMG_PATH_INDEX = 5
+_C.DATALOADER.INPUT_KEY_1 = None
+_C.DATALOADER.INPUT_KEY_2 = None
+_C.DATALOADER.INPUT_KEY_3 = None
+_C.DATALOADER.INPUT_KEY_4 = None
+
+
+
 
 # ---------------------------------------------------------------------------- #
 # Solver
@@ -167,6 +189,8 @@ _C.SOLVER.WEIGHT_DECAY_BIAS = 0.0005
 _C.SOLVER.GAMMA = 0.1
 # decay step of learning rate
 _C.SOLVER.STEPS = (40, 70)
+# scheduler type
+_C.SOLVER.SCHEDULER = 'cosine'
 # warm up factor
 _C.SOLVER.WARMUP_FACTOR = 0.01
 #  warm up epochs
@@ -195,9 +219,18 @@ _C.SOLVER.FEATURE_DIMENSION = 2048
 # ---------------------------------------------------------------------------- #
 _C.LOSS = CN()
 
+# metric loss
 _C.LOSS.METRIC_LOSS_TYPE = 'triplet'
+# output tensor index
+_C.LOSS.METRIC_LOSS_OUTPUT_INDEX = 1
 # Id loss type, options: 'softmax','triplet'
-_C.LOSS.ID_LOSS_TYPE = 'softmax'
+_C.LOSS.ID_LOSS_TYPE = 'cross_entropy'
+# output tensor index
+_C.LOSS.ID_LOSS_OUTPUT_INDEX = 0
+# weigth of ID loss calculation
+_C.LOSS.ID_LOSS_WEIGHT = 1.0
+# weigth of Triplet loss calculation
+_C.LOSS.METRIC_LOSS_WEIGHT = 1.0
 # If train loss include center loss, options: 'True' or 'False'. 
 # Loss with center loss has different optimizer configuration
 _C.LOSS.CENTER_LOSS = False
@@ -205,13 +238,23 @@ _C.LOSS.CENTER_LOSS = False
 _C.LOSS.CENTER_LOSS_WEIGHT = 0.0005
 # If train with label smooth, options: 'on', 'off'
 _C.LOSS.IF_LABELSMOOTH = 'on'
-# weigth of ID loss calculation
-_C.LOSS.ID_LOSS_WEIGHT = 1.0
-# weigth of Triplet loss calculation
-_C.LOSS.TRIPLET_LOSS_WEIGHT = 1.0
+
 # Margin of triplet loss
 _C.LOSS.TRIPLET_MARGIN = None
 
+# name, weight, output_index 
+_C.LOSS.IDENTITY_LOSS = ('cross_entropy', 1.0, 0) # Applies to 1st model output
+
+_C.LOSS.METRIC_LOSS = ('triplet', 1.0, 1) # Applies to 2nd model output (Metric loss type)
+
+
+# ---------------------------------------------------------------------------- #
+# PROCESSOR
+# ---------------------------------------------------------------------------- #
+_C.PROCESSOR = CN()
+_C.PROCESSOR.INPUT_KEYS = 4
+_C.PROCESSOR.TARGET_KEY = 1
+_C.PROCESSOR.IMAGE_KEY = 0
 
 # ---------------------------------------------------------------------------- #
 # TEST

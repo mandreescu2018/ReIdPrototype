@@ -1,10 +1,22 @@
 import torch
 import torch.nn as nn
-# from .backbones.resnet import ResNet, Bottleneck
 import copy
+from loss.metric_learning import Arcface, Cosface, AMSoftmax, CircleLoss
 from .backbones.vit_pytorch import vit_base_patch16_224_TransReID, vit_small_patch16_224_TransReID, deit_small_patch16_224_TransReID
-# from loss.metric_learning import Arcface, Cosface, AMSoftmax, CircleLoss
-from .models_dict import factory_T_type
+
+factory_T_type = {
+    'vit_base_patch16_224_TransReID': vit_base_patch16_224_TransReID,
+    'deit_base_patch16_224_TransReID': vit_base_patch16_224_TransReID,
+    'vit_small_patch16_224_TransReID': vit_small_patch16_224_TransReID,
+    'deit_small_patch16_224_TransReID': deit_small_patch16_224_TransReID
+}
+
+id_loss_factory = {
+    'arcface': Arcface,
+    'cosface': Cosface,
+    'amsoftmax': AMSoftmax,
+    'circle': CircleLoss
+}
 
 def shuffle_unit(features, shift, group, begin=1):
 
@@ -48,28 +60,27 @@ def weights_init_classifier(m):
             nn.init.constant_(m.bias, 0.0)
 
 
+def set_classifier(cfg):
+    num_classes = cfg.DATASETS.NUMBER_OF_CLASSES
+    in_planes = 768
+    classifier = None
+    
+    if cfg.LOSS.ID_LOSS_TYPE in ('arcface', 'cosface', 'amsoftmax', 'circle'):
+        classifier = id_loss_factory[cfg.LOSS.ID_LOSS_TYPE](in_planes, num_classes, s=cfg.SOLVER.COSINE_SCALE, m=cfg.SOLVER.COSINE_MARGIN)        
+    return classifier
+
 class build_transformer(nn.Module):
     def __init__(self, cfg):
         super(build_transformer, self).__init__()
-        last_stride = cfg.MODEL.LAST_STRIDE
-        model_path = cfg.MODEL.PRETRAIN_PATH
-        model_name = cfg.MODEL.NAME
-        pretrain_choice = cfg.MODEL.PRETRAIN_CHOICE
         self.cos_layer = cfg.MODEL.COS_LAYER
         self.neck = cfg.MODEL.NECK
         self.neck_feat = cfg.TEST.NECK_FEAT
         self.in_planes = 768
 
-        print('using Transformer_type: {} as a backbone'.format(cfg.MODEL.TRANSFORMER_TYPE))
+        print(f'using Transformer_type: {cfg.MODEL.TRANSFORMER_TYPE} as a backbone')
 
-        if cfg.MODEL.SIE_CAMERA:
-            camera_num = camera_num
-        else:
-            camera_num = 0
-        if cfg.MODEL.SIE_VIEW:
-            view_num = view_num
-        else:
-            view_num = 0
+        camera_num = cfg.DATASETS.NUMBER_OF_CAMERAS if cfg.MODEL.SIE_CAMERA else 0
+        view_num = cfg.DATASETS.NUMBER_OF_TRACKS if cfg.MODEL.SIE_VIEW else 0
 
         self.base = factory_T_type[cfg.MODEL.TRANSFORMER_TYPE](img_size=cfg.INPUT.SIZE_TRAIN, sie_xishu=cfg.MODEL.SIE_COE,
                                                         camera=camera_num, view=view_num, stride_size=cfg.MODEL.STRIDE_SIZE, drop_path_rate=cfg.MODEL.DROP_PATH,
@@ -77,42 +88,24 @@ class build_transformer(nn.Module):
                                                         attn_drop_rate=cfg.MODEL.ATT_DROP_RATE)
         if cfg.MODEL.TRANSFORMER_TYPE == 'deit_small_patch16_224_TransReID':
             self.in_planes = 384
-        if pretrain_choice == 'imagenet':
-            self.base.load_param(model_path)
-            print('Loading pretrained ImageNet model......from {}'.format(model_path))
+        if cfg.MODEL.PRETRAIN_CHOICE == 'imagenet':
+            self.base.load_param(cfg.MODEL.PRETRAIN_PATH)
+            print(f'Loading pretrained ImageNet model......from {cfg.MODEL.PRETRAIN_PATH}')
 
         self.gap = nn.AdaptiveAvgPool2d(1)
 
-        self.num_classes = cfg.DATASETS.NUMBER_OF_CLASSES
+        self.classifier = set_classifier(cfg)
+        if self.classifier is None:
+            self.classifier = nn.Linear(self.in_planes, cfg.DATASETS.NUMBER_OF_CLASSES, bias=False)
+            self.classifier.apply(weights_init_classifier)
+        
         self.ID_LOSS_TYPE = cfg.LOSS.ID_LOSS_TYPE
-        self.classifier = nn.Linear(self.in_planes, self.num_classes, bias=False)
-        self.classifier.apply(weights_init_classifier)
-
-        # if self.ID_LOSS_TYPE == 'arcface':
-        #     print('using {} with s:{}, m: {}'.format(self.ID_LOSS_TYPE,cfg.SOLVER.COSINE_SCALE,cfg.SOLVER.COSINE_MARGIN))
-        #     self.classifier = Arcface(self.in_planes, self.num_classes,
-        #                               s=cfg.SOLVER.COSINE_SCALE, m=cfg.SOLVER.COSINE_MARGIN)
-        # elif self.ID_LOSS_TYPE == 'cosface':
-        #     print('using {} with s:{}, m: {}'.format(self.ID_LOSS_TYPE,cfg.SOLVER.COSINE_SCALE,cfg.SOLVER.COSINE_MARGIN))
-        #     self.classifier = Cosface(self.in_planes, self.num_classes,
-        #                               s=cfg.SOLVER.COSINE_SCALE, m=cfg.SOLVER.COSINE_MARGIN)
-        # elif self.ID_LOSS_TYPE == 'amsoftmax':
-        #     print('using {} with s:{}, m: {}'.format(self.ID_LOSS_TYPE,cfg.SOLVER.COSINE_SCALE,cfg.SOLVER.COSINE_MARGIN))
-        #     self.classifier = AMSoftmax(self.in_planes, self.num_classes,
-        #                                 s=cfg.SOLVER.COSINE_SCALE, m=cfg.SOLVER.COSINE_MARGIN)
-        # elif self.ID_LOSS_TYPE == 'circle':
-        #     print('using {} with s:{}, m: {}'.format(self.ID_LOSS_TYPE, cfg.SOLVER.COSINE_SCALE, cfg.SOLVER.COSINE_MARGIN))
-        #     self.classifier = CircleLoss(self.in_planes, self.num_classes,
-        #                                 s=cfg.SOLVER.COSINE_SCALE, m=cfg.SOLVER.COSINE_MARGIN)
-        # else:
-        #     self.classifier = nn.Linear(self.in_planes, self.num_classes, bias=False)
-        #     self.classifier.apply(weights_init_classifier)
-
+        
         self.bottleneck = nn.BatchNorm1d(self.in_planes)
         self.bottleneck.bias.requires_grad_(False)
         self.bottleneck.apply(weights_init_kaiming)
 
-    def forward(self, x, label=None, cam_label= None, view_label=None):
+    def forward(self, x, label=0, cam_label= 0, view_label=0):
         global_feat = self.base(x, cam_label=cam_label, view_label=view_label)
 
         feat = self.bottleneck(global_feat)
@@ -132,55 +125,25 @@ class build_transformer(nn.Module):
                 # print("Test with feature before BN")
                 return global_feat
 
-    def load_param(self, trained_path):
-        param_dict = torch.load(trained_path)['model_state_dict']
-        for i in param_dict:
-            self.state_dict()[i.replace('module.', '')].copy_(param_dict[i])
-        print('Loading pretrained model from {}'.format(trained_path))
-
-    def load_param_finetune(self, model_path):
-        param_dict = torch.load(model_path)
-        for i in param_dict:
-            self.state_dict()[i].copy_(param_dict[i])
-        print('Loading pretrained model for finetuning from {}'.format(model_path))
-    
-    def load_param_resume(self, model_path, optimizer, scheduler):
-        checkpoint = torch.load(model_path)
-        self.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-        scheduler.last_epoch = checkpoint['epoch']
-        # loss = checkpoint['loss']
-        return self, optimizer, checkpoint['epoch'], scheduler #, loss
-
 
 class build_transformer_local(nn.Module):
     def __init__(self, cfg):
         super(build_transformer_local, self).__init__()
-        model_path = cfg.MODEL.PRETRAIN_PATH
-        pretrain_choice = cfg.MODEL.PRETRAIN_CHOICE
         self.cos_layer = cfg.MODEL.COS_LAYER
         self.neck = cfg.MODEL.NECK
         self.neck_feat = cfg.TEST.NECK_FEAT
         self.in_planes = 768
 
-        print('using Transformer_type: {} as a backbone'.format(cfg.MODEL.TRANSFORMER_TYPE))
+        print(f'using Transformer_type: {cfg.MODEL.TRANSFORMER_TYPE} as a backbone'.format())
 
-        if cfg.MODEL.SIE_CAMERA:
-            camera_num = cfg.DATASETS.NUMBER_OF_CAMERAS
-        else:
-            camera_num = 0
-
-        if cfg.MODEL.SIE_VIEW:
-            view_num = cfg.DATASETS.NUMBER_OF_TRACKS
-        else:
-            view_num = 0
-
+        camera_num = cfg.DATASETS.NUMBER_OF_CAMERAS if cfg.MODEL.SIE_CAMERA else 0            
+        view_num = cfg.DATASETS.NUMBER_OF_TRACKS if cfg.MODEL.SIE_VIEW else 0
+            
         self.base = factory_T_type[cfg.MODEL.TRANSFORMER_TYPE](img_size=cfg.INPUT.SIZE_TRAIN, sie_xishu=cfg.MODEL.SIE_COE, local_feature=True, camera=camera_num, view=view_num, stride_size=cfg.MODEL.STRIDE_SIZE, drop_path_rate=cfg.MODEL.DROP_PATH)
 
-        if pretrain_choice == 'imagenet':
-            self.base.load_param(model_path)
-            print('Loading pretrained ImageNet model......from {}'.format(model_path))
+        if cfg.MODEL.PRETRAIN_CHOICE == 'imagenet':
+            self.base.load_param(cfg.MODEL.PRETRAIN_PATH)
+            print(f'Loading pretrained ImageNet model......from {cfg.MODEL.PRETRAIN_PATH}')
 
         block = self.base.blocks[-1]
         layer_norm = self.base.norm
@@ -195,44 +158,18 @@ class build_transformer_local(nn.Module):
 
         self.num_classes = cfg.DATASETS.NUMBER_OF_CLASSES
         self.ID_LOSS_TYPE = cfg.LOSS.ID_LOSS_TYPE
-        # if self.ID_LOSS_TYPE == 'arcface':
-        #     print('using {} with s:{}, m: {}'.format(self.ID_LOSS_TYPE,cfg.SOLVER.COSINE_SCALE,cfg.SOLVER.COSINE_MARGIN))
-        #     self.classifier = Arcface(self.in_planes, self.num_classes,
-        #                               s=cfg.SOLVER.COSINE_SCALE, m=cfg.SOLVER.COSINE_MARGIN)
-        # elif self.ID_LOSS_TYPE == 'cosface':
-        #     print('using {} with s:{}, m: {}'.format(self.ID_LOSS_TYPE,cfg.SOLVER.COSINE_SCALE,cfg.SOLVER.COSINE_MARGIN))
-        #     self.classifier = Cosface(self.in_planes, self.num_classes,
-        #                               s=cfg.SOLVER.COSINE_SCALE, m=cfg.SOLVER.COSINE_MARGIN)
-        # elif self.ID_LOSS_TYPE == 'amsoftmax':
-        #     print('using {} with s:{}, m: {}'.format(self.ID_LOSS_TYPE,cfg.SOLVER.COSINE_SCALE,cfg.SOLVER.COSINE_MARGIN))
-        #     self.classifier = AMSoftmax(self.in_planes, self.num_classes,
-        #                                 s=cfg.SOLVER.COSINE_SCALE, m=cfg.SOLVER.COSINE_MARGIN)
-        # elif self.ID_LOSS_TYPE == 'circle':
-        #     print('using {} with s:{}, m: {}'.format(self.ID_LOSS_TYPE, cfg.SOLVER.COSINE_SCALE, cfg.SOLVER.COSINE_MARGIN))
-        #     self.classifier = CircleLoss(self.in_planes, self.num_classes,
-        #                                 s=cfg.SOLVER.COSINE_SCALE, m=cfg.SOLVER.COSINE_MARGIN)
-        # else:
-        #     self.classifier = nn.Linear(self.in_planes, self.num_classes, bias=False)
-        #     self.classifier.apply(weights_init_classifier)
-        #     self.classifier_1 = nn.Linear(self.in_planes, self.num_classes, bias=False)
-        #     self.classifier_1.apply(weights_init_classifier)
-        #     self.classifier_2 = nn.Linear(self.in_planes, self.num_classes, bias=False)
-        #     self.classifier_2.apply(weights_init_classifier)
-        #     self.classifier_3 = nn.Linear(self.in_planes, self.num_classes, bias=False)
-        #     self.classifier_3.apply(weights_init_classifier)
-        #     self.classifier_4 = nn.Linear(self.in_planes, self.num_classes, bias=False)
-        #     self.classifier_4.apply(weights_init_classifier)
-
-        self.classifier = nn.Linear(self.in_planes, self.num_classes, bias=False)
-        self.classifier.apply(weights_init_classifier)
-        self.classifier_1 = nn.Linear(self.in_planes, self.num_classes, bias=False)
-        self.classifier_1.apply(weights_init_classifier)
-        self.classifier_2 = nn.Linear(self.in_planes, self.num_classes, bias=False)
-        self.classifier_2.apply(weights_init_classifier)
-        self.classifier_3 = nn.Linear(self.in_planes, self.num_classes, bias=False)
-        self.classifier_3.apply(weights_init_classifier)
-        self.classifier_4 = nn.Linear(self.in_planes, self.num_classes, bias=False)
-        self.classifier_4.apply(weights_init_classifier)
+        self.classifier = set_classifier(cfg)
+        if self.classifier is None:
+            self.classifier = nn.Linear(self.in_planes, self.num_classes, bias=False)
+            self.classifier.apply(weights_init_classifier)
+            self.classifier_1 = nn.Linear(self.in_planes, self.num_classes, bias=False)
+            self.classifier_1.apply(weights_init_classifier)
+            self.classifier_2 = nn.Linear(self.in_planes, self.num_classes, bias=False)
+            self.classifier_2.apply(weights_init_classifier)
+            self.classifier_3 = nn.Linear(self.in_planes, self.num_classes, bias=False)
+            self.classifier_3.apply(weights_init_classifier)
+            self.classifier_4 = nn.Linear(self.in_planes, self.num_classes, bias=False)
+            self.classifier_4.apply(weights_init_classifier)        
 
         self.bottleneck = nn.BatchNorm1d(self.in_planes)
         self.bottleneck.bias.requires_grad_(False)
@@ -251,11 +188,11 @@ class build_transformer_local(nn.Module):
         self.bottleneck_4.apply(weights_init_kaiming)
 
         self.shuffle_groups = cfg.MODEL.SHUFFLE_GROUP
-        print('using shuffle_groups size:{}'.format(self.shuffle_groups))
+        print(f'using shuffle_groups size:{self.shuffle_groups}')
         self.shift_num = cfg.MODEL.SHIFT_NUM
-        print('using shift_num size:{}'.format(self.shift_num))
+        print(f'using shift_num size:{self.shift_num}')
         self.divide_length = cfg.MODEL.DEVIDE_LENGTH
-        print('using divide_length size:{}'.format(self.divide_length))
+        print(f'using divide_length size:{self.divide_length}')
         self.rearrange = cfg.MODEL.RE_ARRANGE
 
     def forward(self, x, label=None, cam_label= None, view_label=None):  # label is unused if self.cos_layer == 'no'
@@ -322,16 +259,4 @@ class build_transformer_local(nn.Module):
             else:
                 return torch.cat(
                     [global_feat, local_feat_1 / 4, local_feat_2 / 4, local_feat_3 / 4, local_feat_4 / 4], dim=1)
-
-    def load_param(self, trained_path):
-        param_dict = torch.load(trained_path)
-        for i in param_dict:
-            self.state_dict()[i.replace('module.', '')].copy_(param_dict[i])
-        print('Loading pretrained model from {}'.format(trained_path))
-
-    def load_param_finetune(self, model_path):
-        param_dict = torch.load(model_path)
-        for i in param_dict:
-            self.state_dict()[i].copy_(param_dict[i])
-        print('Loading pretrained model for finetuning from {}'.format(model_path))
 

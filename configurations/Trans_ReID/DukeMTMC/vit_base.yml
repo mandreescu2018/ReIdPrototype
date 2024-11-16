@@ -1,10 +1,9 @@
 MODEL:
   PRETRAIN_CHOICE: 'resume'
   # PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
-  PRETRAIN_PATH: './logs/dukemtmc_vit_base/vit_transformer_resume_80.pth'
+  PRETRAIN_PATH: './logs/dukemtmc_vit_base/vit_transformer_resume_30.pth'
   NAME: 'vit_transformer'
   TRANSFORMER_TYPE: 'vit_base_patch16_224_TransReID'
-  IF_LABELSMOOTH: 'off'
   NO_MARGIN: True
   STRIDE_SIZE: [16, 16]
 
@@ -20,11 +19,23 @@ SOLVER:
   WEIGHT_DECAY_BIAS: 1e-4
   BIAS_LR_FACTOR: 2
   LOG_PERIOD: 50
-  EVAL_PERIOD: 20
+  EVAL_PERIOD: 10
   CHECKPOINT_PERIOD: 10
 
 LOSS:
-  CENTER_LOSS: True
+  ID_LOSS_TYPE: 'cross_entropy'
+  METRIC_LOSS_TYPE: 'triplet'
+  ID_LOSS_OUTPUT_INDEX: 0
+  METRIC_LOSS_OUTPUT_INDEX: 1
+  ID_LOSS_WEIGHT: 1.0
+  METRIC_LOSS_WEIGHT: 1.0
+  CENTER_LOSS: False
+  TRIPLET_MARGIN: None
+  IF_LABELSMOOTH: 'off'
+
+PROCESSOR: 
+  INPUT_KEYS: 4
+  TARGET_KEY: 1
 
 INPUT:
   SIZE_TRAIN: [256, 128]
@@ -49,13 +60,13 @@ TEST:
   EVAL: True
   IMS_PER_BATCH: 256
   RE_RANKING: False
-  WEIGHT: './logs/msmt17_vit_base/vit_transformer_resume_20.pth'
+  WEIGHT: './logs/dukemtmc_vit_base/vit_transformer_resume_120.pth'
   NECK_FEAT: 'before'
   FEAT_NORM: 'yes'
   
 WANDB: 
   USE: True
-  PROJECT: 'transformer_reid_dukemtmc'
+  PROJECT: 'vit_reid_dukemtmc'
   NAME: 'dukemtmc_vit_base'
 OUTPUT_DIR: './logs/dukemtmc_vit_base'
 

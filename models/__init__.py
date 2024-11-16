@@ -1,1 +1,1 @@
-from .model_selector import get_model
+from .model_selector import ModelLoader

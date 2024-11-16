@@ -1,14 +1,13 @@
-import logging
 import torch
 from torch import amp
 from.processor_base import ProcessorBase
 import time
 import os
 
-class ProcessorTransformer(ProcessorBase):
+class ProcessorPrototype(ProcessorBase):
 
     def train(self):
-         super(ProcessorTransformer, self).train()         
+         super(ProcessorPrototype, self).train()         
          self.scaler = amp.GradScaler(self.device)
 
          for epoch in range(self.start_epoch+1, self.epochs+1):
@@ -26,35 +25,31 @@ class ProcessorTransformer(ProcessorBase):
                     self.save_model_for_resume(os.path.join(self.config.OUTPUT_DIR, self.config.MODEL.NAME + '_resume_{}.pth'.format(epoch))) 
 
     def train_step(self):
-        super(ProcessorTransformer, self).train_step()
-        for n_iter, (img, pid, target_cam, target_view) in enumerate(self.train_loader):
+        super(ProcessorPrototype, self).train_step()
+        for n_iter, batch in enumerate(self.train_loader):
             self.zero_grading()
-            img = img.to(self.device)
-            target = pid.to(self.device)
-            target_cam = target_cam.to(self.device)
-            target_view = target_view.to(self.device)
-
+            
+            inputs = tuple(batch[i].to(self.device) for i in self.config.INPUT.TRAIN_KEYS)
+            target = batch[1].to(self.device)
+            
             with amp.autocast(self.device):
-                score, feat = self.model(img, target, cam_label=target_cam, view_label=target_view)
-                outputs = score, feat
+                outputs = self.model(*inputs)
                 loss = self.loss_fn(outputs, target)
-                # if self.optimizer_center is not None:
-                #     center_loss = self.center_criterion(feat, target)
             self.scaler.scale(loss).backward()
             self.scaler.step(self.optimizer)
             self.scaler.update()
             
-            if self.optimizer_center is not None:
-                for param in self.center_criterion.parameters():
-                    param.grad.data *= (1. / self.config.LOSS.CENTER_LOSS_WEIGHT)
-                self.scaler.step(self.optimizer_center)
-                self.scaler.update()
-            
+            def calculate_accuracy(outputs, target):
+                index = self.config.LOSS.ID_LOSS_OUTPUT_INDEX if isinstance(outputs, tuple) else 0
+                id_classifier_output = outputs[index]
+                id_hat_element = id_classifier_output[0] if isinstance(id_classifier_output, list) else id_classifier_output
+                acc = (id_hat_element.max(1)[1] == target).float().mean()
 
-            score_element = score[0] if isinstance(score, list) else score
-            acc = (score_element.max(1)[1] == target).float().mean()
+                return acc
 
-            self.loss_meter.update(loss.item(), img.shape[0])
+            acc = calculate_accuracy(outputs, target)            
+
+            self.loss_meter.update(loss.item(), self.train_loader.batch_size)
             self.acc_meter.update(acc, 1)
 
             torch.cuda.synchronize()

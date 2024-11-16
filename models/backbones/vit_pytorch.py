@@ -39,8 +39,6 @@ def _ntuple(n):
         return tuple(repeat(x, n))
     return parse
 
-IMAGENET_DEFAULT_MEAN = (0.485, 0.456, 0.406)
-IMAGENET_DEFAULT_STD = (0.229, 0.224, 0.225)
 to_2tuple = _ntuple(2)
 
 def drop_path(x, drop_prob: float = 0., training: bool = False):

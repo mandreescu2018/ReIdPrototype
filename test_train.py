@@ -3,11 +3,12 @@ import argparse
 from config import cfg
 from utils import set_seeds, setup_logger
 # from datasets import make_dataloader
-from models import get_model
-from solver import create_scheduler
-from processors.processor_transformer import ProcessorTransformer
+from models import ModelLoader
+# from solver import create_scheduler
+from solver import make_scheduler
+from processors import get_processor
 from loss import LossComposer, CenterLoss
-from solver.make_optimizer import make_optimizer
+from solver.make_optimizer import make_optimizer, OptimizerFactory
 
 from datasets import make_dataloader
 
@@ -27,8 +28,6 @@ if __name__ == '__main__':
 
     cfg.DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'    
 
-    start_epoch = 0
-
     # logger
     logger = setup_logger("ReIDPrototype", cfg.OUTPUT_DIR, if_train=True)
     logger.info(f"Using {cfg.DEVICE} device")
@@ -44,8 +43,12 @@ if __name__ == '__main__':
     cfg.DATASETS.NUMBER_OF_IMAGES_IN_QUERY = query_num
 
     # Model
-    model = get_model(cfg)
-    # print(model)
+    model_loader = ModelLoader(cfg)
+    # optimizer = make_optimizer(cfg, model_loader.model)
+    optimizer_fact = OptimizerFactory(cfg, model_loader.model)
+    optimizer = optimizer_fact.make_optimizer()
+    scheduler = make_scheduler(cfg, optimizer)
+    model, optimizer, scheduler, start_epoch = model_loader.load_param(optimizer=optimizer, scheduler=scheduler)
 
     # Losses
     loss_fn = LossComposer(cfg)
@@ -59,21 +62,19 @@ if __name__ == '__main__':
     #     center_criterion = None
     #     optimizer_center = None
 
-    # Optimizers
-    optimizer = make_optimizer(cfg, model)
     
-    scheduler = create_scheduler(cfg, optimizer)    
+    proc = get_processor(cfg)
 
-    proc = ProcessorTransformer(cfg, 
-                                model, 
-                                train_loader, 
-                                test_loader,
-                                optimizer,
-                                optimizer_center,
-                                center_criterion,
-                                loss_fn,
-                                scheduler,
-                                start_epoch=start_epoch)
+    proc = proc(cfg, 
+                model, 
+                train_loader, 
+                test_loader,
+                optimizer,
+                optimizer_center,
+                center_criterion,
+                loss_fn,
+                scheduler,
+                start_epoch=start_epoch)
     proc.train()
 
 

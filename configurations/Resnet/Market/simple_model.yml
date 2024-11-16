@@ -1,26 +1,27 @@
 MODEL:
   PRETRAIN_CHOICE: 'imagenet'
-  PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
-  # PRETRAIN_PATH: './logs/market_vit_base_jpm/vit_transformer_jpm_resume_10.pth'
-  NAME: 'vit_transformer_jpm'
-  TRANSFORMER_TYPE: 'vit_base_patch16_224_TransReID'
+  PRETRAIN_PATH: './logs/simple_resnet_market/simple_resnet50_resume_30.pth'
+  NAME: 'simple_resnet50'
+  
 
 SOLVER:
   OPTIMIZER_NAME: 'SGD'
-  MAX_EPOCHS: 120
-  BASE_LR: 0.008
-  IMS_PER_BATCH: 64
+  MAX_EPOCHS: 60
+  BASE_LR: 0.001
+  IMS_PER_BATCH: 32
+  WARMUP_METHOD: 'linear'
+  MOMENTUM: 0.9
   FEATURE_DIMENSION: 2048
-  MARGIN: None
-  WEIGHT_DECAY:  1e-4
-  WEIGHT_DECAY_BIAS: 1e-4
-  BIAS_LR_FACTOR: 2
   LOG_PERIOD: 50
   EVAL_PERIOD: 10
+  WEIGHT_DECAY:  5e-4
+  WEIGHT_DECAY_BIAS: 1e-4
+  BIAS_LR_FACTOR: 2
+  SCHEDULER: 'step_lr'
 
 PROCESSOR: 
-  INPUT_KEYS: 4
-  TARGET_KEY: 1
+  INPUT_KEYS: 1 # number of items that will be passed to the model
+  TARGET_KEY: 1 # position of person id in the input values
 
 LOSS:
   ID_LOSS_TYPE: 'cross_entropy'
@@ -28,10 +29,11 @@ LOSS:
   ID_LOSS_OUTPUT_INDEX: 0
   METRIC_LOSS_OUTPUT_INDEX: 1
   ID_LOSS_WEIGHT: 1.0
-  METRIC_LOSS_WEIGHT: 1.0
+  METRIC_LOSS_WEIGHT: 1.2
   CENTER_LOSS: False
   TRIPLET_MARGIN: None
   IF_LABELSMOOTH: 'off'
+  
 
 INPUT:
   SIZE_TRAIN: [256, 128]
@@ -42,6 +44,8 @@ INPUT:
   PIXEL_STD: [0.5, 0.5, 0.5]
   HF_PROB: 0.5 # random horizontal flip
   PADDING: 10
+  TRAIN_KEYS: [0]
+  EVAL_KEYS: [0]
 
 DATALOADER:
   SAMPLER: 'softmax_triplet'
@@ -50,20 +54,19 @@ DATALOADER:
 
 DATASETS:
   NAMES: market1501
-  ROOT_DIR: ('D:\datasets')
   DIR: 'market1501'
 
 TEST:
   EVAL: True
   IMS_PER_BATCH: 256
   RE_RANKING: False
-  WEIGHT: './logs/0321_market_vit_base/vit_transformer_resume_20.pth'
+  WEIGHT: './logs/market_vit_base/vit_transformer_resume_120.pth'
   NECK_FEAT: 'before'
   FEAT_NORM: 'yes'
+  
 WANDB: 
   USE: False
-  PROJECT: 'transformer_reid'
-  NAME: '0321_market_vit_base_jpm'
-
-OUTPUT_DIR: './logs/market_vit_base_jpm'
+  PROJECT: 'resnet_market'
+  NAME: 'market_resnet_base'
+OUTPUT_DIR: './logs/simple_resnet_market_b32_wi'
 

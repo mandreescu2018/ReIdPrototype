@@ -4,3 +4,4 @@ torchvision==0.17.0+cu118
 yacs
 pandas
 timm
+wandb
