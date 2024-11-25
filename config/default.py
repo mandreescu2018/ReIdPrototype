@@ -197,6 +197,8 @@ _C.SOLVER.WARMUP_FACTOR = 0.01
 _C.SOLVER.WARMUP_EPOCHS = 5
 # method of warm up, option: 'constant','linear'
 _C.SOLVER.WARMUP_METHOD = "linear"
+# iterations of warm up
+_C.SOLVER.WARMUP_ITERS = 0
 
 _C.SOLVER.COSINE_MARGIN = 0.5
 _C.SOLVER.COSINE_SCALE = 30
@@ -246,6 +248,13 @@ _C.LOSS.TRIPLET_MARGIN = None
 _C.LOSS.IDENTITY_LOSS = ('cross_entropy', 1.0, 0) # Applies to 1st model output
 
 _C.LOSS.METRIC_LOSS = ('triplet', 1.0, 1) # Applies to 2nd model output (Metric loss type)
+
+# _C.LOSS.COMPONENTS = [
+#     {"type": "cross_entropy", "weight": 1.0, "output_index": 0},
+#     {"type": "triplet", "weight": 1.0, "output_index": 1},
+# ]
+
+
 
 
 # ---------------------------------------------------------------------------- #

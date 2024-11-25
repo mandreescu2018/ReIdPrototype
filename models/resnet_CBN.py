@@ -9,7 +9,6 @@ from .backbones.resnet_backbone import ResNet_Backbone
 from utils.weight_utils import weights_init_kaiming, weights_init_classifier
 
 class ResNetBuilder(nn.Module):
-    in_planes = 2048
 
     def __init__(self, cfg):
         super().__init__()

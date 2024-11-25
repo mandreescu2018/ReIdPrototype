@@ -1,7 +1,7 @@
 MODEL:
-  PRETRAIN_CHOICE: 'resume'
-  # PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
-  PRETRAIN_PATH: './logs/dukemtmc_vit_base/vit_transformer_resume_30.pth'
+  PRETRAIN_CHOICE: 'imagenet'
+  PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
+  # PRETRAIN_PATH: './logs/dukemtmc_vit_base/vit_transformer_resume_30.pth'
   NAME: 'vit_transformer'
   TRANSFORMER_TYPE: 'vit_base_patch16_224_TransReID'
   NO_MARGIN: True
@@ -45,6 +45,8 @@ INPUT:
   PADDING: 10
   PIXEL_MEAN: [0.5, 0.5, 0.5]
   PIXEL_STD: [0.5, 0.5, 0.5]
+  TRAIN_KEYS: [0, 1, 2, 3]
+  EVAL_KEYS: [0, NaN, 3, 4]
 
 DATALOADER:
   SAMPLER: 'softmax_triplet'
@@ -53,7 +55,6 @@ DATALOADER:
 
 DATASETS:
   NAMES: dukemtmc
-  ROOT_DIR: ('D:\datasets')
   DIR: 'DukeMTMC-reID'
 
 TEST:
@@ -65,7 +66,7 @@ TEST:
   FEAT_NORM: 'yes'
   
 WANDB: 
-  USE: True
+  USE: False
   PROJECT: 'vit_reid_dukemtmc'
   NAME: 'dukemtmc_vit_base'
 OUTPUT_DIR: './logs/dukemtmc_vit_base'

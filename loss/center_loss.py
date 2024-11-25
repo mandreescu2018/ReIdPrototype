@@ -45,7 +45,8 @@ class CenterLoss(nn.Module):
         # as it effectively squares the differences. This is a common technique used to compute distances efficiently in a 
         # batch-wise manner within deep learning models.        
         # Performs a matrix multiplication of the matrices x and self.centers.t(). The matrix input is added to the final result.
-        distmat.addmm_(1, -2, x, self.centers.t())
+        distmat.addmm_(x, self.centers.t(), beta=1, alpha=-2 )
+        # distmat.addmm_(1, -2, x, self.centers.t())
 
         classes = torch.arange(self.num_classes).long().to(self.device)
         labels = labels.unsqueeze(1).expand(batch_size, self.num_classes)

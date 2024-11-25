@@ -11,11 +11,11 @@ class ProcessorPrototype(ProcessorBase):
          self.scaler = amp.GradScaler(self.device)
 
          for epoch in range(self.start_epoch+1, self.epochs+1):
-                self.reset_metrics()
+                self.reset_metrics()                
                 self.scheduler.step(epoch)
                 start_time = time.time()
                 self.current_epoch = epoch
-                self.train_step()
+                self.train_step()                
                 self.on_epoch_end(start_time)
                 self.log_to_wandb()
                 self.dump_metrics_data_to_tensorboard()

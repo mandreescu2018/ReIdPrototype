@@ -3,13 +3,15 @@ from .vit_model import build_transformer, build_transformer_local
 from .mobilenet_v2 import MobileNetV2
 from .resnet_CBN import ResNetBuilder
 from .simple_model import SimpleReIDModel
+from .resnet_BoT import BagOfTricksBuilder
 # from config.factories_dict import model_factory
 
 model_factory = {
     'vit_transformer': build_transformer,
     'vit_transformer_jpm': build_transformer_local,
     'mobilenet_v2': MobileNetV2,
-    'resnet50': ResNetBuilder,
+    'resnet50': BagOfTricksBuilder,
+    # 'resnet50': ResNetBuilder,
     'simple_resnet50': SimpleReIDModel
 }
 

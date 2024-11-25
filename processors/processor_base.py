@@ -160,7 +160,7 @@ class ProcessorBase:
         self.tensorboard_logger.dump_metric_tb(self.loss_meter.avg, self.current_epoch, f'losses', f'loss')        
         self.tensorboard_logger.dump_metric_tb(self.acc_meter.avg, self.current_epoch, f'losses', f'acc')
         self.tensorboard_logger.dump_metric_tb(self.optimizer.param_groups[0]['lr'], self.current_epoch, f'losses', f'lr')
-
+    
     def inference(self):        
         self.evaluator.reset()
         cmc, mAP = self.model_evaluation()

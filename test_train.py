@@ -8,7 +8,7 @@ from models import ModelLoader
 from solver import make_scheduler
 from processors import get_processor
 from loss import LossComposer, CenterLoss
-from solver.make_optimizer import make_optimizer, OptimizerFactory
+from solver.make_optimizer import OptimizerFactory
 
 from datasets import make_dataloader
 

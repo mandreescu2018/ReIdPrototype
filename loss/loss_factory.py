@@ -2,7 +2,7 @@ import torch.nn as nn
 from .triplet_loss import TripletLoss
 from .softmax_loss import CrossEntropyLabelSmooth
 
-class GeneralLoss:
+class BaseLoss:
     def __init__(self, cfg) -> None:
         self.config = cfg
         self._loss = None
@@ -14,7 +14,7 @@ class GeneralLoss:
     def __call__(self, outputs, target):
         return self.compute_loss(outputs, target) * self.weight
 
-class TripletLossWrap(GeneralLoss):
+class TripletLossWrap(BaseLoss):
     def __init__(self, cfg) -> None:
         super().__init__(cfg)
         self.weight = cfg.LOSS.METRIC_LOSS_WEIGHT
@@ -36,7 +36,7 @@ class TripletLossWrap(GeneralLoss):
             loss = self.loss(feat, target)[0]
         return loss * self.weight
 
-class CrossEntropyLossWrap(GeneralLoss):
+class CrossEntropyLossWrap(BaseLoss):
     def __init__(self, cfg) -> None:
         super().__init__(cfg)
         self.weight = cfg.LOSS.ID_LOSS_WEIGHT
@@ -65,31 +65,45 @@ class CrossEntropyLossWrap(GeneralLoss):
             loss = self.loss(score, target)
         return loss * self.weight
 
+class ComposedLoss:
+    def __init__(self) -> None:
+        self.losses = []
+
+    def add_loss(self, loss_component):
+        """
+        Add a loss function component to the composer.
+        Args:
+            loss_component: An instance of BaseLoss or derived class.
+        """
+        self.losses.append(loss_component)
+
+    def __call__(self, outputs, target):
+        final_loss = 0
+        for loss_fn in self.losses:
+            final_loss += loss_fn(outputs, target)
+        
+        return final_loss
+
 class LossComposer:
     _factory = {
         'triplet': TripletLossWrap,
         'cross_entropy': CrossEntropyLossWrap
     }
-
-    def __init__(self, cfg) -> None:
+    def __init__(self, cfg):
         self.config = cfg
-        self.loss_fns = []
+        self.composed_loss = ComposedLoss()
         self.load_losses()
-
-    def add_loss_fn(self, loss_fn):
-        self.loss_fns.append(loss_fn)
-
+    
     def load_losses(self):
         # identity loss
         if self.config.LOSS.ID_LOSS_TYPE in LossComposer._factory:
-            self.add_loss_fn(LossComposer._factory[self.config.LOSS.ID_LOSS_TYPE](self.config))
+            self.composed_loss.add_loss(CrossEntropyLossWrap(self.config))
         # metric loss
         if self.config.LOSS.METRIC_LOSS_TYPE in LossComposer._factory:
-            self.add_loss_fn(LossComposer._factory[self.config.LOSS.METRIC_LOSS_TYPE](self.config))
-
+            self.composed_loss.add_loss(TripletLossWrap(self.config))
+    
     def __call__(self, outputs, target):
-        final_loss = 0
-        for loss_fn in self.loss_fns:
-            final_loss += loss_fn(outputs, target)
-        
-        return final_loss
+        return self.composed_loss(outputs, target)
+
+
+
