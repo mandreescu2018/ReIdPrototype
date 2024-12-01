@@ -3,7 +3,7 @@ import wandb
 class WandbLogger:
     def __init__(self, cfg):
         self.config = cfg
-        # start a new wandb run to track this experiment
+        # start a new wandb run 
         wandb.init(
             # set the wandb project where this run will be logged
             project=self.config.WANDB.PROJECT,
@@ -11,7 +11,7 @@ class WandbLogger:
             resume= "must" if self.config.MODEL.PRETRAIN_CHOICE == 'resume' else "allow",
             id=self.config.WANDB.RUN_ID,
 
-            # track hyperparameters and run metadata
+            # track hyperparameters
             config={
             "learning_rate": self.config.SOLVER.BASE_LR,
             "architecture": self.config.MODEL.NAME, 
@@ -21,8 +21,6 @@ class WandbLogger:
         )
     
     def log_results(self, loss, acc, optimizer):
-        # if not self.config.WANDB.USE:
-        #     return
         wandb.log({
             "Loss": loss,
             "Accuracy": acc,

@@ -1,13 +1,14 @@
 import torch
 import argparse
 from config import cfg
-from utils import set_seeds, setup_logger
+from utils import set_seeds, setup_logger, DeviceManager
 # from datasets import make_dataloader
 from models import ModelLoader
 # from solver import create_scheduler
 from solver import make_scheduler
 from processors import get_processor
-from loss import LossComposer, CenterLoss
+# from loss import LossComposer
+from loss.loss_factory_prototype import LossComposer
 from solver.make_optimizer import OptimizerFactory
 
 from datasets import make_dataloader
@@ -26,11 +27,12 @@ if __name__ == '__main__':
     # cfg.freeze()
     set_seeds(cfg.SOLVER.SEED)
 
-    cfg.DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'    
+    # cfg.DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu' 
+    # cfg.DEVICE = DeviceManager.get_device()  
 
     # logger
     logger = setup_logger("ReIDPrototype", cfg.OUTPUT_DIR, if_train=True)
-    logger.info(f"Using {cfg.DEVICE} device")
+    logger.info(f"Using {DeviceManager.get_device()} device")
     logger.info(f"Using {args.config_file} as config file")
     logger.info(f"Saving model in the path :{cfg.OUTPUT_DIR}")
     logger.info(cfg)
@@ -51,9 +53,9 @@ if __name__ == '__main__':
     model, optimizer, scheduler, start_epoch = model_loader.load_param(optimizer=optimizer, scheduler=scheduler)
 
     # Losses
-    loss_fn = LossComposer(cfg)
-    center_criterion = None
-    optimizer_center = None
+    loss_composer = LossComposer(cfg)
+    center_criterion = loss_composer.center_criterion
+    optimizer_center = torch.optim.SGD(center_criterion.parameters(), lr=cfg.SOLVER.CENTER_LR)
     
     # if cfg.LOSS.CENTER_LOSS:
     #     center_criterion = CenterLoss(cfg)  # center loss
@@ -72,7 +74,7 @@ if __name__ == '__main__':
                 optimizer,
                 optimizer_center,
                 center_criterion,
-                loss_fn,
+                loss_composer,
                 scheduler,
                 start_epoch=start_epoch)
     proc.train()

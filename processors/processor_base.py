@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from torch.cuda import amp
 import logging
-from utils import AverageMeter, WandbLogger
+from utils import AverageMeter, WandbLogger, DeviceManager
 from utils.metrics import R1_mAP_eval
 from utils.tensorboard_logger import TensoboardLogger
 
@@ -73,7 +73,7 @@ class ProcessorBase:
         self.epochs = cfg.SOLVER.MAX_EPOCHS
         self.current_epoch = 0
         self.start_epoch = start_epoch
-        self.device = cfg.DEVICE
+        self.device = DeviceManager.get_device().type
         self.init_meters()
         self.evaluator = R1_mAP_eval(cfg.DATASETS.NUMBER_OF_IMAGES_IN_QUERY, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)
         self.input_processor = ModelInputProcessor(cfg)

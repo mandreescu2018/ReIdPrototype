@@ -37,7 +37,12 @@ LOSS:
   METRIC_LOSS_WEIGHT: 1.0
   CENTER_LOSS: False
   TRIPLET_MARGIN: 0.3
-  IF_LABELSMOOTH: 'off'
+  IF_LABELSMOOTH: 'on'
+  _C.LOSS.COMPONENTS: [
+    {"type": "cross_entropy", "weight": 1.0, "output_index": 0, "label_smooth": "off"},
+    {"type": "triplet", "weight": 1.0, "output_index": 1, "margin": None},
+    {"type": "center", "weight": 0.0005, "output_index": 1},
+]
   
 
 INPUT:
@@ -74,5 +79,5 @@ WANDB:
   USE: False
   PROJECT: 'resnet_market'
   NAME: 'market_resnet_base'
-OUTPUT_DIR: './logs/bag_of_tricks_market'
+OUTPUT_DIR: './logs/bag_of_tricks_market_ls_center'
 

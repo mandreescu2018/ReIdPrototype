@@ -4,6 +4,7 @@ from .mobilenet_v2 import MobileNetV2
 from .resnet_CBN import ResNetBuilder
 from .simple_model import SimpleReIDModel
 from .resnet_BoT import BagOfTricksBuilder
+from utils import DeviceManager
 # from config.factories_dict import model_factory
 
 model_factory = {
@@ -23,7 +24,7 @@ class ModelLoader:
     @property
     def model(self):
         if self._model is None:            
-            self._model = model_factory[self.cfg.MODEL.NAME](self.cfg).to(self.cfg.DEVICE)
+            self._model = model_factory[self.cfg.MODEL.NAME](self.cfg).to(DeviceManager.get_device())
         return self._model
 
     def load_param(self, optimizer=None, scheduler=None):

@@ -38,6 +38,12 @@ class ProcessorPrototype(ProcessorBase):
             self.scaler.scale(loss).backward()
             self.scaler.step(self.optimizer)
             self.scaler.update()
+
+            if self.optimizer_center is not None:
+                for param in self.center_criterion.parameters():
+                    param.grad.data *= (1. / self.config.LOSS.CENTER_LOSS_WEIGHT)
+                self.scaler.step(self.optimizer_center)
+                self.scaler.update()
             
             def calculate_accuracy(outputs, target):
                 index = self.config.LOSS.ID_LOSS_OUTPUT_INDEX if isinstance(outputs, tuple) else 0

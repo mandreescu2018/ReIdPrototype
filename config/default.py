@@ -114,6 +114,7 @@ _C.DATASETS = CN()
 # List of the dataset names for training, as present in paths_catalog.py
 _C.DATASETS.NAMES = ('market1501')
 # Root directory where datasets should be used (and downloaded if not found)
+# _C.DATASETS.ROOT_DIR = '/home/Datasets'
 _C.DATASETS.ROOT_DIR = 'D:\datasets'
 # folder where images are stored
 _C.DATASETS.DIR = ('market1501')
@@ -245,16 +246,16 @@ _C.LOSS.IF_LABELSMOOTH = 'on'
 _C.LOSS.TRIPLET_MARGIN = None
 
 # name, weight, output_index 
-_C.LOSS.IDENTITY_LOSS = ('cross_entropy', 1.0, 0) # Applies to 1st model output
 
-_C.LOSS.METRIC_LOSS = ('triplet', 1.0, 1) # Applies to 2nd model output (Metric loss type)
+_C.LOSS.COMPONENTS = [
+    {"type": "cross_entropy", "weight": 1.0, "output_index": 0, "label_smooth": "off"},
+    {"type": "triplet", "weight": 1.0, "output_index": 1, "margin": None},
+    {"type": "center", "weight": 0.0005, "output_index": 1},
+]
 
-# _C.LOSS.COMPONENTS = [
-#     {"type": "cross_entropy", "weight": 1.0, "output_index": 0},
+# _C.LOSS.METRIC_COMPONENTS = [
 #     {"type": "triplet", "weight": 1.0, "output_index": 1},
 # ]
-
-
 
 
 # ---------------------------------------------------------------------------- #

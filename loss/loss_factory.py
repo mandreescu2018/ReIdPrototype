@@ -46,7 +46,7 @@ class CrossEntropyLossWrap(BaseLoss):
     def loss(self):
         if self._loss == None:
             if  self.config.LOSS.IF_LABELSMOOTH == 'on':
-                self._loss = CrossEntropyLabelSmooth(self.cfg.DATASETS.NUMBER_OF_CLASSES)
+                self._loss = CrossEntropyLabelSmooth(self.config.DATASETS.NUMBER_OF_CLASSES)
             else:
                 self._loss = nn.CrossEntropyLoss()
         return self._loss

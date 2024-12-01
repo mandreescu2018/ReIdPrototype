@@ -1,13 +1,6 @@
-import os
-import sys
-root = os.path.join(os.path.dirname(__file__), '..')
-sys.path.append(root)
-
-
 import torch
 from torch import nn
-from utils import set_seeds
-
+from utils import DeviceManager
 
 class CenterLoss(nn.Module):
     """Center loss.
@@ -20,12 +13,13 @@ class CenterLoss(nn.Module):
         feat_dim (int): feature dimension.
     """
 
-    def __init__(self, cfg):
+    def __init__(self, num_classes, feature_dim):
         super(CenterLoss, self).__init__()
-        self.device = cfg.DEVICE
-        self.num_classes = cfg.DATASETS.NUMBER_OF_CLASSES
+        self.device = DeviceManager.get_device().type
+        self.num_classes = num_classes
 
-        self.centers = nn.Parameter(torch.randn(self.num_classes, cfg.SOLVER.FEATURE_DIMENSION).to(self.device))
+        # self.centers = nn.Parameter(torch.randn(self.num_classes, cfg.SOLVER.FEATURE_DIMENSION).to(self.device))
+        self.centers = nn.Parameter(torch.randn(self.num_classes, feature_dim).to(self.device))
 
     def forward(self, x, labels):
         """
@@ -45,6 +39,10 @@ class CenterLoss(nn.Module):
         # as it effectively squares the differences. This is a common technique used to compute distances efficiently in a 
         # batch-wise manner within deep learning models.        
         # Performs a matrix multiplication of the matrices x and self.centers.t(). The matrix input is added to the final result.
+        
+        x = x.to(torch.float32)
+        self.centers = self.centers.to(torch.float32)
+
         distmat.addmm_(x, self.centers.t(), beta=1, alpha=-2 )
         # distmat.addmm_(1, -2, x, self.centers.t())
 
@@ -66,15 +64,3 @@ class CenterLoss(nn.Module):
         dist = dist.clamp(min=1e-12, max=1e+12)
         loss = dist.sum() / batch_size
         return loss
-
-
-if __name__ == '__main__':
-    set_seeds()
-
-    center_loss = CenterLoss(device="cuda")
-    features = torch.rand(16, 2048).to("cuda")
-    targets = torch.Tensor([0, 1, 2, 3, 2, 3, 1, 4, 5, 3, 2, 1, 0, 0, 5, 4]).long()
-    targets = targets.to("cuda")
-
-    loss = center_loss(features, targets)
-    print(loss)
