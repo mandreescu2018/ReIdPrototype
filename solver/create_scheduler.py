@@ -4,10 +4,10 @@ Hacked together by / Copyright 2020 Ross Wightman
 from .cosine_lr import CosineLRScheduler
 import torch
 
-def create_lr_scheduler(cfg, optimizer):
-    return torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
+def create_lr_scheduler(optimizer, cfg):
+    return torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=cfg.SOLVER.GAMMA)
 
-def create_scheduler(cfg, optimizer):
+def create_scheduler(optimizer, cfg):
     num_epochs = cfg.SOLVER.MAX_EPOCHS
     # type 1
     # lr_min = 0.01 * cfg.SOLVER.BASE_LR
@@ -19,7 +19,7 @@ def create_scheduler(cfg, optimizer):
     # lr_min = 0.001 * cfg.SOLVER.BASE_LR
     # warmup_lr_init = 0.01 * cfg.SOLVER.BASE_LR
 
-    warmup_t = cfg.SOLVER.WARMUP_EPOCHS
+    warmup_t = cfg.SOLVER.WARMUP_ITERS
     noise_range = None
 
     lr_scheduler = CosineLRScheduler(

@@ -1,27 +1,27 @@
 MODEL:
   PRETRAIN_CHOICE: 'imagenet'
   PRETRAIN_PATH: './weights_pretrained/resnet50-19c8e357.pth'
-  # PRETRAIN_PATH: './logs/bag_of_tricks_market_ls_center/resnet50_resume_60.pth'
-  NECK: 'bnneck'
-  NAME: 'resnet50'
+  # PRETRAIN_PATH: './logs/bag_of_tricks_market/resnet50_resume_30.pth'
+  NECK: 'no'
+  NAME: 'hacnn'
   
 SOLVER:
   OPTIMIZER_NAME: 'Adam'
-  MAX_EPOCHS: 120
-  BASE_LR: 0.00035
+  MAX_EPOCHS: 150
+  BASE_LR: 0.0005
   IMS_PER_BATCH: 64
   MOMENTUM: 0.9
-  FEATURE_DIMENSION: 2048
+  FEATURE_DIMENSION: 512
   LOG_PERIOD: 50
   EVAL_PERIOD: 10
   WEIGHT_DECAY:  5e-4
   WEIGHT_DECAY_BIAS: 1e-4
   BIAS_LR_FACTOR: 2
-  SCHEDULER: 'warm_up'
-  STEPS: [40, 70]
+  SCHEDULER: 'step_lr'
+  STEPS: [80]
   GAMMA: 0.1
   WARMUP_FACTOR: 0.01
-  WARMUP_ITERS: 10
+  WARMUP_ITERS: 0
   WARMUP_METHOD: 'linear'
 
 PROCESSOR: 
@@ -36,12 +36,11 @@ LOSS:
   COMPONENTS: [
     {"type": "cross_entropy", "weight": 1.0, "output_index": 0, "label_smooth": "off"},
     {"type": "triplet", "weight": 1.0, "output_index": 1, "margin": 0.3},
-    {"type": "center", "weight": 0.0005, "output_index": 1},
 ]
-  
+
 INPUT:
-  SIZE_TRAIN: [256, 128]
-  SIZE_TEST: [256, 128]
+  SIZE_TRAIN: [160, 64]
+  SIZE_TEST: [160, 64]
   PIXEL_MEAN: [0.485, 0.456, 0.406]
   PIXEL_STD: [0.229, 0.224, 0.225]
   PADDING: 10
@@ -61,7 +60,7 @@ TEST:
   EVAL: True
   IMS_PER_BATCH: 256
   RE_RANKING: False
-  WEIGHT: './logs/bag_of_tricks_market/resnet50_resume_120.pth'
+  WEIGHT: './logs/hacnn_market/hacnn_resume_150.pth'
   # NECK_FEAT: 'before'
   NECK_FEAT: 'after'
   FEAT_NORM: 'yes'
@@ -69,6 +68,6 @@ TEST:
 WANDB: 
   USE: False
   PROJECT: 'resnet_market'
-  NAME: 'market_resnet_base'
-OUTPUT_DIR: './logs/bag_of_tricks_market_ls_center_bnneck'
+  NAME: 'market_hacnn_base'
+OUTPUT_DIR: './logs/hacnn_market'
 

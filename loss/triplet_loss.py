@@ -111,9 +111,9 @@ class TripletLoss(object):
     """
 
     def __init__(self, margin=None, hard_factor=0.0):
-        self.margin = margin
+        self.margin = None if margin == "None" else margin
         self.hard_factor = hard_factor
-        if margin is not None:
+        if self.margin is not None:
             self.ranking_loss = nn.MarginRankingLoss(margin=margin)
         else:
             self.ranking_loss = nn.SoftMarginLoss()

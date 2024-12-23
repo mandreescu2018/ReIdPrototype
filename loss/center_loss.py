@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from utils import DeviceManager
+from utils.device_manager import DeviceManager
 
 class CenterLoss(nn.Module):
     """Center loss.

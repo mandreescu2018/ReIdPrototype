@@ -4,9 +4,10 @@ import torch
 import torch.nn as nn
 from torch.cuda import amp
 import logging
-from utils import AverageMeter, WandbLogger, DeviceManager
+from utils import AverageMeter, WandbLogger
 from utils.metrics import R1_mAP_eval
 from utils.tensorboard_logger import TensoboardLogger
+from utils.device_manager import DeviceManager
 
 # from utils import Saver
 
@@ -96,26 +97,6 @@ class ProcessorBase:
 
     def train_step(self):
         self.model.train()
-
-    # def model_evaluation(self):
-    #     self.model.eval()
-    #     for n_iter, batch in enumerate(self.train_loader):
-    #         # Prepare inputs and targets
-    #         inputs, target = self.input_processor.process(batch)
-    #         # Move data to the correct device
-    #         inputs = tuple(input.to(self.device) for input in inputs)
-    #         target = target.to(self.device)
-
-    #         with torch.no_grad():
-    #             pid = batch[self.config.DATALOADER.BATCH_PID_INDEX]
-    #             camid = batch[self.config.DATALOADER.BATCH_CAM_INDEX]
-    #             outputs = self.model(*inputs)
-    #             feat = outputs[0] if isinstance(outputs, (list, tuple)) else outputs
-    #             self.evaluator.update((feat, pid, camid))
-        
-    #     cmc, mAP, _, _, _, _, _ = self.evaluator.compute()
-
-    #     return cmc, mAP
     
     def model_evaluation(self):
         self.model.eval()
@@ -196,6 +177,8 @@ class ProcessorBase:
                 'epoch': self.current_epoch,
                 'model_state_dict': self.model.state_dict(),
                 'optimizer_state_dict': self.optimizer.state_dict(),
+                'center_criterion_state_dict': self.center_criterion.state_dict() if self.center_criterion is not None else None,
+                'optimizer_center_state_dict': self.optimizer_center.state_dict() if self.optimizer_center is not None else None,
                 'scheduler_state_dict': self.scheduler.state_dict(),
                 }, path)
     

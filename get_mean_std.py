@@ -4,11 +4,6 @@ from config import cfg
 from utils import set_seeds, setup_logger
 from datasets import make_dataloader
 # from datasets.make_dataloader_trans import make_dataloader
-from models import get_model
-from solver import create_scheduler
-from processors.processor_transformer import ProcessorTransformer
-from loss import CenterLoss, MultipleLoss
-from solver.make_optimizer import make_optimizer
 
 def calculate_mean_std(dataloader):
     mean = 0.

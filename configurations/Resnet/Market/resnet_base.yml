@@ -27,11 +27,10 @@ LOSS:
   METRIC_LOSS_TYPE: 'triplet'
   ID_LOSS_OUTPUT_INDEX: 0
   METRIC_LOSS_OUTPUT_INDEX: 1
-  ID_LOSS_WEIGHT: 1.0
-  METRIC_LOSS_WEIGHT: 1.0
-  CENTER_LOSS: False
-  TRIPLET_MARGIN: None
-  IF_LABELSMOOTH: 'off'
+  COMPONENTS: [
+    {"type": "cross_entropy", "weight": 1.0, "output_index": 0, "label_smooth": "off"},
+    {"type": "triplet", "weight": 1.0, "output_index": 1, "margin": None},
+  ]
   
 
 INPUT:
@@ -41,7 +40,6 @@ INPUT:
   # PIXEL_STD: [0.229, 0.224, 0.225]
   PIXEL_MEAN: [0.5, 0.5, 0.5]
   PIXEL_STD: [0.5, 0.5, 0.5]
-  HF_PROB: 0.5 # random horizontal flip
   PADDING: 10
   TRAIN_KEYS: [0]
   EVAL_KEYS: [0]

@@ -11,17 +11,13 @@ import torch
 # separating MultiStepLR with WarmupLR
 # but the current LRScheduler design doesn't allow it
 
-# scheduler = WarmupMultiStepLR(optimizer, cfg.SOLVER.STEPS, cfg.SOLVER.GAMMA, cfg.SOLVER.WARMUP_FACTOR,
-#                                           cfg.SOLVER.WARMUP_ITERS, cfg.SOLVER.WARMUP_METHOD)
-
 class WarmupMultiStepLR(torch.optim.lr_scheduler._LRScheduler):
     def __init__(
-        self,
-        cfg,
+        self,        
         optimizer,
+        cfg,
         last_epoch=-1,
     ):
-        # self._last_epoch = None
         self.milestones = cfg.SOLVER.STEPS
         self.gamma = cfg.SOLVER.GAMMA
         self.warmup_factor = cfg.SOLVER.WARMUP_FACTOR

@@ -1,11 +1,10 @@
 import torch
 import argparse
 from config import cfg
-from utils import set_seeds, DeviceManager
+from utils import set_seeds
 from datasets import make_dataloader
 # from datasets.make_dataloader_trans import make_dataloader
 from models import ModelLoader
-from processors.processor_transformer import ProcessorTransformer
 from processors.processor_prototype import ProcessorPrototype
 
 
@@ -22,8 +21,6 @@ if __name__ == '__main__':
         cfg.merge_from_file(args.config_file)
     set_seeds(cfg.SOLVER.SEED)
 
-    # cfg.DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-    
     # datasets related
     train_loader, test_loader, num_classes, number_of_cameras, number_of_camera_tracks, query_num = make_dataloader(cfg)
 
@@ -33,10 +30,10 @@ if __name__ == '__main__':
     # Model
     cfg.MODEL.PRETRAIN_CHOICE = 'test'
     model_loader = ModelLoader(cfg)
-    model, _, _, _ = model_loader.load_param()
+    model_loader.load_param()
     
-    proc = ProcessorTransformer(cfg, 
-                                model, 
+    proc = ProcessorPrototype(cfg, 
+                                model_loader.model, 
                                 train_loader, 
                                 test_loader)
     proc.inference()

@@ -115,7 +115,7 @@ _C.DATASETS = CN()
 _C.DATASETS.NAMES = ('market1501')
 # Root directory where datasets should be used (and downloaded if not found)
 # _C.DATASETS.ROOT_DIR = '/home/Datasets'
-_C.DATASETS.ROOT_DIR = 'D:\datasets'
+_C.DATASETS.ROOT_DIR = 'C:\datasets'
 # folder where images are stored
 _C.DATASETS.DIR = ('market1501')
 
@@ -144,18 +144,22 @@ _C.DATALOADER.BATCH_IMAGE_IDEX = 0
 _C.DATALOADER.BATCH_PID_INDEX = 1
 # Index of the camera in batch output by dataloader
 _C.DATALOADER.BATCH_CAM_INDEX = 2
-# Index of the camera tensor in batch output by dataloader
-_C.DATALOADER.BATCH_CAMS_INDEX = 3
-# Index of the target view in batch output by dataloader
-_C.DATALOADER.BATCH_TARGET_VIEW_INDEX = 4
-_C.DATALOADER.BATCH_IMG_PATH_INDEX = 5
-_C.DATALOADER.INPUT_KEY_1 = None
-_C.DATALOADER.INPUT_KEY_2 = None
-_C.DATALOADER.INPUT_KEY_3 = None
-_C.DATALOADER.INPUT_KEY_4 = None
 
+_C.DATALOADER.TRAIN_TRANSFORMS = [
+    {'tranform':'resize'}, 
+    {'tranform':'random_horizontal_flip', 'prob': 0.5}, 
+    {'tranform':'pad', 'padding': 10}, 
+    {'tranform':'random_crop'}, 
+    {'tranform':'to_tensor'}, 
+    {'tranform':'normalize'}, 
+    {'tranform':'random_erasing', 'prob': 0.5}
+    ]
 
-
+_C.DATALOADER.TEST_TRANSFORMS = [
+    {'tranform':'resize'}, 
+    {'tranform':'to_tensor'}, 
+    {'tranform':'normalize'}, 
+    ]
 
 # ---------------------------------------------------------------------------- #
 # Solver
@@ -194,8 +198,6 @@ _C.SOLVER.STEPS = (40, 70)
 _C.SOLVER.SCHEDULER = 'cosine'
 # warm up factor
 _C.SOLVER.WARMUP_FACTOR = 0.01
-#  warm up epochs
-_C.SOLVER.WARMUP_EPOCHS = 5
 # method of warm up, option: 'constant','linear'
 _C.SOLVER.WARMUP_METHOD = "linear"
 # iterations of warm up
@@ -230,33 +232,14 @@ _C.LOSS.METRIC_LOSS_OUTPUT_INDEX = 1
 _C.LOSS.ID_LOSS_TYPE = 'cross_entropy'
 # output tensor index
 _C.LOSS.ID_LOSS_OUTPUT_INDEX = 0
-# weigth of ID loss calculation
-_C.LOSS.ID_LOSS_WEIGHT = 1.0
-# weigth of Triplet loss calculation
-_C.LOSS.METRIC_LOSS_WEIGHT = 1.0
-# If train loss include center loss, options: 'True' or 'False'. 
-# Loss with center loss has different optimizer configuration
-_C.LOSS.CENTER_LOSS = False
-# Balanced weight of center loss
-_C.LOSS.CENTER_LOSS_WEIGHT = 0.0005
-# If train with label smooth, options: 'on', 'off'
-_C.LOSS.IF_LABELSMOOTH = 'on'
-
-# Margin of triplet loss
-_C.LOSS.TRIPLET_MARGIN = None
 
 # name, weight, output_index 
-
+# If train with label smooth, options: 'on', 'off'
 _C.LOSS.COMPONENTS = [
     {"type": "cross_entropy", "weight": 1.0, "output_index": 0, "label_smooth": "off"},
     {"type": "triplet", "weight": 1.0, "output_index": 1, "margin": None},
     {"type": "center", "weight": 0.0005, "output_index": 1},
 ]
-
-# _C.LOSS.METRIC_COMPONENTS = [
-#     {"type": "triplet", "weight": 1.0, "output_index": 1},
-# ]
-
 
 # ---------------------------------------------------------------------------- #
 # PROCESSOR

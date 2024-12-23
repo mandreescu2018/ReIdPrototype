@@ -1,2 +1,2 @@
 from .center_loss import CenterLoss
-from .loss_factory import LossComposer
+from .loss_factory_prototype import LossComposer

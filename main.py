@@ -17,21 +17,22 @@ x = torch.randn(matrix_size, matrix_size)
 y = torch.randn(matrix_size, matrix_size)
 
 
-print("************** CPU Speed Test **************")
+# print("************** CPU Speed Test **************")
+# start_time = time.time()
+# res = torch.matmul(x, y)
+# print("Time: ", time.time() - start_time)
+print("************** GPU Speed Test **************")
 start_time = time.time()
-res = torch.matmul(x, y)
-print("Time: ", time.time() - start_time)
-
-for _ in range(3):
-    print("************** GPU Speed Test **************")
+for _ in range(18):
+    
     x_gpu = x.to('cuda')
     y_gpu = y.to('cuda')
     torch.cuda.synchronize()
 
-    start_time = time.time()
+    
     res_gpu = torch.matmul(x_gpu, y_gpu)
     torch.cuda.synchronize()
 
-    print("Time: ", time.time() - start_time)
-    print("res_gpu: ", res_gpu.device)
+print("Time: ", time.time() - start_time)
+print("res_gpu: ", res_gpu.device)
 
