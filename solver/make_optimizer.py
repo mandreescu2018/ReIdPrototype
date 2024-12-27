@@ -1,6 +1,5 @@
 import torch
 
-
 class OptimizerFactory:
     def __init__(self, cfg, model):
         self.cfg = cfg

@@ -2,14 +2,11 @@ import torch
 import argparse
 from config import cfg
 from utils import set_seeds, setup_logger
-# from datasets import make_dataloader
 from models import ModelLoader
-# from solver import create_scheduler
-from solver import make_scheduler
 from processors import get_processor
-# from loss import LossComposer
 from loss.loss_factory_prototype import LossComposer
 from solver.make_optimizer import OptimizerFactory
+from solver import LearningRateScheduler
 
 from datasets import make_dataloader
 
@@ -59,7 +56,7 @@ if __name__ == '__main__':
     # Optimizers
     optimizer_fact = OptimizerFactory(cfg, model_loader.model)
     optimizer = optimizer_fact.make_optimizer()
-    scheduler = make_scheduler(cfg, optimizer)
+    scheduler = LearningRateScheduler(optimizer, cfg)
     
     model_loader.optimizer = optimizer
     model_loader.scheduler = scheduler

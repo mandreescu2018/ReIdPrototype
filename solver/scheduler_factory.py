@@ -1,113 +1,126 @@
-import torch
-import math
+import matplotlib.pyplot as plt
+from torch.optim.lr_scheduler import StepLR, ExponentialLR, CosineAnnealingLR
+from .warmup_lr_scheduler import WarmupMultiStepLR
+from .cosine_lr import CosineLRScheduler
 
-class GeneralLRScheduler:
-    def __init__(self, optimizer, strategy="step", config=None):
+class SchedulerStrategy:
+     """Base class for scheduler strategies."""
+     def __init__(self, optimizer, cfg):
+        self.optimizer = optimizer
+        self.config = cfg
+
+class WarmupMultiStepLRScheduler(SchedulerStrategy):
+    """Wrapper class for WarmupMultiStepLR scheduler."""
+    @property
+    def scheduler(self):
+        return WarmupMultiStepLR(self.optimizer, self.config)
+
+class ExponentialLRScheduler(SchedulerStrategy):
+    """Wrapper class for PyTorch ExponentialLR scheduler."""
+    @property
+    def scheduler(self):
+        return ExponentialLR(self.optimizer,
+                             gamma=self.config.SOLVER.GAMMA)
+
+class StepLRScheduler(SchedulerStrategy):
+    """Wrapper class for PyTorch StepLR scheduler."""
+    @property
+    def step_size(self):
+        steps = self.config.SOLVER.STEPS
+        return steps[0] if isinstance(steps, (tuple, list)) else steps
+
+    @property
+    def scheduler(self):
+        return StepLR(
+            self.optimizer, 
+            step_size=self.step_size, 
+            gamma=self.config.SOLVER.GAMMA
+        )
+
+class CosineAnealingScheduler(SchedulerStrategy):
+    @property
+    def scheduler(self):
+        return CosineAnnealingLR(self.optimizer, 
+                                 T_max=self.config.SOLVER.MAX_EPOCHS, 
+                                 eta_min=0.0, last_epoch=-1)
+    
+class CosineScheduler(SchedulerStrategy):
+    """Wrapper class for CosineLRScheduler."""
+    @property
+    def scheduler(self):
+        # type 1
+        # lr_min = 0.01 * cfg.SOLVER.BASE_LR
+        # warmup_lr_init = 0.001 * cfg.SOLVER.BASE_LR
+        # type 2
+        lr_min = 0.002 * self.config.SOLVER.BASE_LR
+        warmup_lr_init = 0.01 * self.config.SOLVER.BASE_LR
+        # type 3
+        # lr_min = 0.001 * cfg.SOLVER.BASE_LR
+        # warmup_lr_init = 0.01 * cfg.SOLVER.BASE_LR
+
+        warmup_t = self.config.SOLVER.WARMUP_ITERS
+        noise_range = None
+
+        return CosineLRScheduler(
+                self.optimizer,
+                t_initial=self.config.SOLVER.MAX_EPOCHS,
+                lr_min=lr_min,
+                t_mul= 1.,
+                decay_rate=0.1,
+                warmup_lr_init=warmup_lr_init,
+                warmup_t=warmup_t,
+                cycle_limit=1,
+                t_in_epochs=True,
+                noise_range_t=noise_range,
+                noise_pct= 0.67,
+                noise_std= 1.,
+                noise_seed=42,
+            )
+
+class LearningRateScheduler:
+    def __init__(self, optimizer, cfg):
         """
-        General learning rate scheduler supporting multiple strategies.
-
         Args:
-            optimizer (torch.optim.Optimizer): Optimizer to adjust the learning rate for.
-            strategy (str): Scheduling strategy. Options are:
-                - "step": Step decay.
-                - "exponential": Exponential decay.
-                - "cosine": Cosine annealing.
-                - "plateau": Reduce on plateau (validation-based).
-            config (dict): Configuration for the scheduler strategy. Keys depend on the chosen strategy:
-                - "step": {"step_size": int, "factor": float, "min_lr": float}
-                - "exponential": {"gamma": float, "min_lr": float}
-                - "cosine": {"T_max": int, "min_lr": float}
-                - "plateau": {"patience": int, "factor": float, "min_lr": float}
+            optimizer (torch.optim.Optimizer): Optimizer instance.
+            cfg (dict): configuration values, including the scheduler type.                
         """
         self.optimizer = optimizer
-        self.strategy = strategy.lower()
-        self.config = config or {}
-        self.last_epoch = 0
-        self.best_metric = float("inf")
-        self.epochs_since_improvement = 0
+        self.config = cfg
+        self.scheduler = self._build_scheduler()
+        
 
-        # Check for required keys in the config
-        if self.strategy == "step" and "step_size" not in self.config:
-            raise ValueError("For 'step' strategy, 'step_size' must be provided.")
-        if self.strategy not in ["step", "exponential", "cosine", "plateau"]:
-            raise ValueError(f"Unsupported strategy: {self.strategy}")
+    def _build_scheduler(self):
+        scheduler_type = self.config.SOLVER.SCHEDULER
 
-    def step(self, epoch=None, metric=None):
-        """
-        Updates the learning rate based on the chosen strategy.
-
-        Args:
-            epoch (int, optional): Current epoch. If None, increments the internal epoch counter.
-            metric (float, optional): Metric to monitor for plateau-based scheduling.
-        """
-        if epoch is None:
-            epoch = self.last_epoch + 1
-        self.last_epoch = epoch
-
-        if self.strategy == "step":
-            self._step_decay()
-        elif self.strategy == "exponential":
-            self._exponential_decay()
-        elif self.strategy == "cosine":
-            self._cosine_annealing()
-        elif self.strategy == "plateau":
-            if metric is None:
-                raise ValueError("For 'plateau' strategy, 'metric' must be provided.")
-            self._plateau(metric)
-
-    def _step_decay(self):
-        """Step decay: Reduce learning rate every `step_size` epochs."""
-        step_size = self.config.get("step_size", 10)
-        factor = self.config.get("factor", 0.1)
-        min_lr = self.config.get("min_lr", 1e-6)
-
-        if self.last_epoch % step_size == 0:
-            for param_group in self.optimizer.param_groups:
-                new_lr = max(param_group["lr"] * factor, min_lr)
-                param_group["lr"] = new_lr
-
-    def _exponential_decay(self):
-        """Exponential decay: Multiply learning rate by `gamma` each epoch."""
-        gamma = self.config.get("gamma", 0.9)
-        min_lr = self.config.get("min_lr", 1e-6)
-
-        for param_group in self.optimizer.param_groups:
-            new_lr = max(param_group["lr"] * gamma, min_lr)
-            param_group["lr"] = new_lr
-
-    def _cosine_annealing(self):
-        """Cosine annealing: Learning rate follows a cosine curve."""
-        T_max = self.config.get("T_max", 50)
-        min_lr = self.config.get("min_lr", 1e-6)
-
-        for param_group in self.optimizer.param_groups:
-            new_lr = min_lr + (param_group["initial_lr"] - min_lr) * (1 + math.cos(math.pi * self.last_epoch / T_max)) / 2
-            param_group["lr"] = new_lr
-
-    def _plateau(self, metric):
-        """Reduce on plateau: Reduce learning rate when the monitored metric stops improving."""
-        patience = self.config.get("patience", 5)
-        factor = self.config.get("factor", 0.1)
-        min_lr = self.config.get("min_lr", 1e-6)
-
-        if metric < self.best_metric:
-            self.best_metric = metric
-            self.epochs_since_improvement = 0
+        if scheduler_type == "step":
+            return StepLRScheduler(self.optimizer, self.config).scheduler
+        elif scheduler_type == "warm_up":
+            return WarmupMultiStepLRScheduler(self.optimizer, self.config).scheduler
+        elif scheduler_type == "exponential":
+            return ExponentialLRScheduler(self.optimizer, self.config).scheduler
+        elif scheduler_type == "cosine":
+            return CosineScheduler(self.optimizer, self.config).scheduler
         else:
-            self.epochs_since_improvement += 1
+            raise ValueError(f"Unknown scheduler type: {scheduler_type}")
 
-        if self.epochs_since_improvement >= patience:
-            for param_group in self.optimizer.param_groups:
-                new_lr = max(param_group["lr"] * factor, min_lr)
-                param_group["lr"] = new_lr
-            self.epochs_since_improvement = 0
+    def load_state_dict(self, state_dict):
+        """
+        Loads the state of the scheduler.
+        Args:
+            state_dict (dict): State dictionary.
+        """
+        self.scheduler.load_state_dict(state_dict)
 
-# ---
-
-# ### Configuration and Usage Example
-
-# #### Example Configurations
-
-# 1. **Step Decay**
-#    ```python
-#    step_config = {"step_size": 5, "factor": 0.5, "min_lr": 1e-6}
+    def state_dict(self):
+        """
+        Returns the current state of the scheduler.
+        """
+        return self.scheduler.state_dict()
+    
+    def step(self, epoch):
+        """
+        Steps the current scheduler to update learning rates.
+        Args:
+            epoch (int): Current training epoch.
+        """
+        self.scheduler.step(epoch)

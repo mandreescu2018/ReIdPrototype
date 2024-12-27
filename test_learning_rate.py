@@ -2,11 +2,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-
 import matplotlib.pyplot as plt
 
-from solver.lr_scheduler import WarmupMultiStepLR
-from solver.lr_scheduler_prototype import LrScheduler
+from solver.scheduler_factory import LearningRateScheduler
+from solver import make_scheduler
 from config import cfg
 import argparse
 
@@ -27,11 +26,18 @@ if __name__ == "__main__":
     learning_rates =[]
     # Example model and optimizer
     model = nn.Linear(10, 1)
-    # optimizer = optim.Adam(model.parameters(), lr=0.01)
-    optimizer = torch.optim.Adam(model.parameters(), lr=cfg.SOLVER.BASE_LR)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=cfg.SOLVER.BASE_LR)
+    optimizer = torch.optim.SGD(model.parameters(), momentum=cfg.SOLVER.MOMENTUM)
+    # torch.optim.SGD(params, momentum=self.cfg.SOLVER.MOMENTUM)
 
     # Initialize the dynamic scheduler
-    dynamic_lr_scheduler = LrScheduler(optimizer, cfg)
+    cfg.SOLVER.SCHEDULER = "cosine"
+    cfg.SOLVER.BASE_LR = 0.008
+    cfg.SOLVER.WARMUP_ITERS = 5
+    dynamic_lr_scheduler = LearningRateScheduler(optimizer, cfg)
+    
+    # dynamic_lr_scheduler = make_scheduler(cfg, optimizer)
+
 
     # Simulated training loop
     for epoch in range(1, 120):

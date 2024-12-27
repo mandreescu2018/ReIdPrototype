@@ -17,8 +17,7 @@ class ProcessorPrototype(ProcessorBase):
                 self.current_epoch = epoch
                 self.train_step()                
                 self.on_epoch_end(start_time)
-                self.log_to_wandb()
-                self.dump_metrics_data_to_tensorboard()
+                
                 if epoch % self.config.SOLVER.EVAL_PERIOD == 0 or epoch == 1:
                     self.validation_step()
                 if epoch % self.config.SOLVER.CHECKPOINT_PERIOD == 0:

@@ -189,11 +189,10 @@ _C.SOLVER.CENTER_LOSS_WEIGHT = 0.0005
 # Settings of weight decay
 _C.SOLVER.WEIGHT_DECAY = 0.0005
 _C.SOLVER.WEIGHT_DECAY_BIAS = 0.0005
-
 # decay rate of learning rate
 _C.SOLVER.GAMMA = 0.1
 # decay step of learning rate
-_C.SOLVER.STEPS = (40, 70)
+_C.SOLVER.STEPS = None
 # scheduler type
 _C.SOLVER.SCHEDULER = 'cosine'
 # warm up factor

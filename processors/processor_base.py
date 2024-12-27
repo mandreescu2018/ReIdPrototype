@@ -4,12 +4,10 @@ import torch
 import torch.nn as nn
 from torch.cuda import amp
 import logging
-from utils import AverageMeter, WandbLogger
+from utils import AverageMeter, WandbLogger, DataFrameLogger
 from utils.metrics import R1_mAP_eval
 from utils.tensorboard_logger import TensoboardLogger
 from utils.device_manager import DeviceManager
-
-# from utils import Saver
 
 class ModelInputProcessor:
     def __init__(self, cfg):
@@ -81,6 +79,7 @@ class ProcessorBase:
         if self.config.WANDB.USE and not self.config.MODEL.PRETRAIN_CHOICE == 'test':
             self.wlogger = WandbLogger(cfg)
         self.tensorboard_logger = TensoboardLogger(cfg.OUTPUT_DIR)
+        self.dataframe_logger = DataFrameLogger(cfg.OUTPUT_DIR)
                 
     def init_meters(self):
         self.acc_meter = AverageMeter()
@@ -128,19 +127,16 @@ class ProcessorBase:
         for r in [1, 5, 10, 20]:
             self.logger.info("CMC curve, Rank-{:<3}:{:.3%}".format(r, cmc[r - 1]))
         torch.cuda.empty_cache()
+        self.dataframe_logger.log_validation(mAP, cmc)
         self.evaluator.reset()
 
-        return cmc, mAP
+        # return cmc, mAP
     
     def zero_grading(self):
         self.optimizer.zero_grad()
         if self.optimizer_center is not None:
             self.optimizer_center.zero_grad()
 
-    def dump_metrics_data_to_tensorboard(self):
-        self.tensorboard_logger.dump_metric_tb(self.loss_meter.avg, self.current_epoch, f'losses', f'loss')        
-        self.tensorboard_logger.dump_metric_tb(self.acc_meter.avg, self.current_epoch, f'losses', f'acc')
-        self.tensorboard_logger.dump_metric_tb(self.optimizer.param_groups[0]['lr'], self.current_epoch, f'losses', f'lr')
     
     def inference(self):        
         self.evaluator.reset()
@@ -151,6 +147,33 @@ class ProcessorBase:
         for r in [1, 5, 10, 20]:
             print(f"CMC curve, Rank-{r:<3}:{cmc[r - 1]:.3%}")
 
+
+    # LOGGING
+    def on_epoch_end(self, start_time):
+        self.log_epoch_end_data(start_time)        
+        self.log_to_wandb()
+        self.dump_metrics_data_to_tensorboard()
+        self.log_training_to_dataframe()
+    
+    def log_epoch_end_data(self, start_time):
+        time_per_batch = (time.time() - start_time) / len(self.train_loader)
+        speed = self.train_loader.batch_size / time_per_batch
+        self.logger.info(f"Epoch {self.current_epoch} done. Time per batch: {time_per_batch:.3f}[s] Speed: {speed:.1f}[samples/s]")
+        
+    def dump_metrics_data_to_tensorboard(self):
+        self.tensorboard_logger.dump_metric_tb(self.loss_meter.avg, self.current_epoch, f'losses', f'loss')        
+        self.tensorboard_logger.dump_metric_tb(self.acc_meter.avg, self.current_epoch, f'losses', f'acc')
+        self.tensorboard_logger.dump_metric_tb(self.optimizer.param_groups[0]['lr'], self.current_epoch, f'losses', f'lr')
+    
+    def log_training_to_dataframe(self):
+        self.dataframe_logger.log_training(self.current_epoch, self.loss_meter.avg, self.acc_meter.avg, self.optimizer.param_groups[0]['lr'])
+
+    def log_to_wandb(self):
+        if not self.config.WANDB.USE:
+            return
+        self.wlogger.log_results(self.loss_meter.avg, self.acc_meter.avg, self.optimizer)
+    
+    
     def log_training_details(self, n_iter):
         if (n_iter + 1) % self.config.SOLVER.LOG_PERIOD == 0:
             status_msg = f"Epoch[{self.current_epoch}] "
@@ -160,17 +183,7 @@ class ProcessorBase:
             status_msg += f"Base Lr: {self.optimizer.param_groups[0]['lr']:.2e}"
             self.logger.info(status_msg)
     
-
-    def on_epoch_end(self, start_time):
-        time_per_batch = (time.time() - start_time) / len(self.train_loader)
-        speed = self.train_loader.batch_size / time_per_batch
-        self.logger.info(f"Epoch {self.current_epoch} done. Time per batch: {time_per_batch:.3f}[s] Speed: {speed:.1f}[samples/s]")
-        
-    def log_to_wandb(self):
-        if not self.config.WANDB.USE:
-            return
-        self.wlogger.log_results(self.loss_meter.avg, self.acc_meter.avg, self.optimizer)
-        
+    # SAVE MODEL
     def save_model_for_resume(self,
                           path: str):
         torch.save({
