@@ -6,7 +6,6 @@ from .simple_model import SimpleReIDModel
 from .resnet_BoT import BagOfTricksBuilder
 from .hacnn_model import HACNNBuilder
 from utils.device_manager import DeviceManager
-# from config.factories_dict import model_factory
 
 model_factory = {
     'vit_transformer': build_transformer,

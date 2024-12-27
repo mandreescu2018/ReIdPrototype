@@ -5,7 +5,6 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 
 from solver.scheduler_factory import LearningRateScheduler
-from solver import make_scheduler
 from config import cfg
 import argparse
 

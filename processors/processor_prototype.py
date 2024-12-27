@@ -49,9 +49,9 @@ class ProcessorPrototype(ProcessorBase):
                 self.scaler.step(self.optimizer_center)
                 self.scaler.update()
             
-            def calculate_accuracy(outputs, target):
-                index = self.config.LOSS.ID_LOSS_OUTPUT_INDEX if isinstance(outputs, tuple) else 0
-                id_classifier_output = outputs[index]
+            def calculate_accuracy(outputs_, target):
+                index = self.config.LOSS.ID_LOSS_OUTPUT_INDEX if isinstance(outputs_, tuple) else 0
+                id_classifier_output = outputs_[index]
                 id_hat_element = id_classifier_output[0] if isinstance(id_classifier_output, list) else id_classifier_output
                 acc = (id_hat_element.max(1)[1] == target).float().mean()
 
@@ -60,7 +60,7 @@ class ProcessorPrototype(ProcessorBase):
             acc = calculate_accuracy(outputs, target)            
 
             self.loss_meter.update(loss.item(), self.train_loader.batch_size)
-            self.acc_meter.update(acc, 1)
+            self.acc_meter.update(acc.item(), 1)
 
             torch.cuda.synchronize()
             self.log_training_details(n_iter)

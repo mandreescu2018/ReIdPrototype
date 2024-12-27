@@ -150,25 +150,32 @@ class ProcessorBase:
 
     # LOGGING
     def on_epoch_end(self, start_time):
+        """Log epoch end data and send to tensorboard and wandb."""
         self.log_epoch_end_data(start_time)        
         self.log_to_wandb()
         self.dump_metrics_data_to_tensorboard()
         self.log_training_to_dataframe()
     
     def log_epoch_end_data(self, start_time):
+        """Log epoch end data."""
         time_per_batch = (time.time() - start_time) / len(self.train_loader)
         speed = self.train_loader.batch_size / time_per_batch
         self.logger.info(f"Epoch {self.current_epoch} done. Time per batch: {time_per_batch:.3f}[s] Speed: {speed:.1f}[samples/s]")
         
     def dump_metrics_data_to_tensorboard(self):
+        """Send metrics data to tensorboard."""
         self.tensorboard_logger.dump_metric_tb(self.loss_meter.avg, self.current_epoch, f'losses', f'loss')        
         self.tensorboard_logger.dump_metric_tb(self.acc_meter.avg, self.current_epoch, f'losses', f'acc')
         self.tensorboard_logger.dump_metric_tb(self.optimizer.param_groups[0]['lr'], self.current_epoch, f'losses', f'lr')
     
     def log_training_to_dataframe(self):
-        self.dataframe_logger.log_training(self.current_epoch, self.loss_meter.avg, self.acc_meter.avg, self.optimizer.param_groups[0]['lr'])
+        self.dataframe_logger.log_training(self.current_epoch, 
+                                           self.loss_meter.avg, 
+                                           self.acc_meter.avg, 
+                                           self.optimizer.param_groups[0]['lr'])
 
     def log_to_wandb(self):
+        """Send logging data to weights and biases."""
         if not self.config.WANDB.USE:
             return
         self.wlogger.log_results(self.loss_meter.avg, self.acc_meter.avg, self.optimizer)

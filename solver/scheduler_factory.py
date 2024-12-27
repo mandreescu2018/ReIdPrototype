@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 from torch.optim.lr_scheduler import StepLR, ExponentialLR, CosineAnnealingLR
 from .warmup_lr_scheduler import WarmupMultiStepLR
 from .cosine_lr import CosineLRScheduler
