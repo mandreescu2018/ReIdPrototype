@@ -45,7 +45,7 @@ class DataFrameLogger:
         dataframe.to_csv(filename, mode='a', header=not file_exists, index=False)
 
     
-    def log_validation(self, map, cmc):
+    def log_validation(self, epoch, map, cmc):
         """
         Log validation data.
 
@@ -54,11 +54,12 @@ class DataFrameLogger:
             cmc (float): Cumulative matching curve list.            
         """
         entry = {
+            "epoch": [epoch],
             "map": [map],
             "rank_1": [cmc[0]],
-            "rank_5": [cmc[1]],
-            "rank_10": [cmc[2]],
-            "rank_20": [cmc[3]],
+            "rank_5": [cmc[4]],
+            "rank_10": [cmc[9]],
+            "rank_20": [cmc[19]],
             
         }
         df = pd.DataFrame(entry)

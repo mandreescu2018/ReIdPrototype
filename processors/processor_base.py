@@ -127,7 +127,7 @@ class ProcessorBase:
         for r in [1, 5, 10, 20]:
             self.logger.info("CMC curve, Rank-{:<3}:{:.3%}".format(r, cmc[r - 1]))
         torch.cuda.empty_cache()
-        self.dataframe_logger.log_validation(mAP, cmc)
+        self.dataframe_logger.log_validation(self.current_epoch, mAP, cmc)
         self.evaluator.reset()
 
         # return cmc, mAP

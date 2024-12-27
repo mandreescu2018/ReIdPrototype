@@ -28,10 +28,10 @@ LOSS:
   METRIC_LOSS_TYPE: 'triplet'
   ID_LOSS_OUTPUT_INDEX: 0
   METRIC_LOSS_OUTPUT_INDEX: 1
-  METRIC_LOSS_WEIGHT: 1.0
-  CENTER_LOSS: False
-  TRIPLET_MARGIN: None
-  IF_LABELSMOOTH: 'off'
+  COMPONENTS: [
+    {"type": "cross_entropy", "weight": 1.0, "output_index": 0, "label_smooth": "off"},
+    {"type": "triplet", "weight": 1.0, "output_index": 1, "margin": None},
+  ]
 
 INPUT:
   SIZE_TRAIN: [256, 128]
@@ -41,6 +41,8 @@ INPUT:
   PIXEL_MEAN: [0.5, 0.5, 0.5]
   PIXEL_STD: [0.5, 0.5, 0.5]
   PADDING: 10
+  TRAIN_KEYS: [0, 1, 2, 3]
+  EVAL_KEYS: [0, NaN, 3, 4]
 
 DATALOADER:
   SAMPLER: 'softmax_triplet'
