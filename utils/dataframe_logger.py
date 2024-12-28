@@ -55,13 +55,10 @@ class DataFrameLogger:
         """
         entry = {
             "epoch": [epoch],
-            "map": [map],
-            "rank_1": [cmc[0]],
-            "rank_5": [cmc[4]],
-            "rank_10": [cmc[9]],
-            "rank_20": [cmc[19]],
-            
+            "map": [map]                        
         }
+        cmc_curve = {f"rank_{i+1}": [cmc[i]] for i in range((len(cmc)))}
+        entry.update(cmc_curve) 
         df = pd.DataFrame(entry)
         self.append_to_csv(df, self.validation_save_path)
 
