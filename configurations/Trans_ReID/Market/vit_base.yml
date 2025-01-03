@@ -25,7 +25,7 @@ SOLVER:
   WARMUP_METHOD: 'linear'
 
 PROCESSOR: 
-  INPUT_KEYS: 4
+  # INPUT_KEYS: 4
   TARGET_KEY: 1
 
 LOSS:
@@ -65,10 +65,10 @@ TEST:
   WEIGHT: './logs/market_vit_base/vit_transformer_resume_120.pth'
   NECK_FEAT: 'before'
   FEAT_NORM: 'yes'
-  
-WANDB: 
-  USE: False
-  PROJECT: 'transformer_vit_market'
-  NAME: 'market_vit_base'
+
+LOGGING: 
+  WANDB_USE: False
+  WANDB_PROJECT: 'transformer_vit_market_base'
+  WANDB_NAME: 'market_vit_base'
 OUTPUT_DIR: './logs/market_vit_base'
 

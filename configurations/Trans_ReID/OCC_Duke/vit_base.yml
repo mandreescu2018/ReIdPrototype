@@ -51,10 +51,10 @@ TEST:
   NECK_FEAT: 'before'
   FEAT_NORM: 'yes'
 
-WANDB: 
-  USE: True
-  PROJECT: 'prototype_reid'
-  NAME: 'occ_duke_vit_base_2nd'
+LOGGGING:
+  WANDB_USE: True
+  WANDB_PROJECT: 'prototype_reid'
+  WANDB_NAME: 'occ_duke_vit_base_2nd'
 OUTPUT_DIR: './logs/occ_duke_vit_base'
 
 

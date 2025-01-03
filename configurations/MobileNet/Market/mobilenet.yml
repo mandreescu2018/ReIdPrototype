@@ -27,7 +27,7 @@ LOSS:
   IF_LABELSMOOTH: 'off'
 
 PROCESSOR: 
-  INPUT_KEYS: 1 # number of items that will be passed to the model
+  # INPUT_KEYS: 1 # number of items that will be passed to the model
   TARGET_KEY: 1 # position of person id in the input values
 
 INPUT:
@@ -55,11 +55,11 @@ TEST:
   WEIGHT: './logs/resnet_market/vit_transformer_resume_80.pth'
   NECK_FEAT: 'before'
   FEAT_NORM: 'yes'
-  
-WANDB: 
-  USE: False
-  PROJECT: 'resnet_reid_market'
-  NAME: 'resnet_base'
+
+LOGGING:
+  WANDB_USE: False
+  WANDB_PROJECT: 'resnet_reid_market'
+  WANDB_NAME: 'resnet_base'
   
 OUTPUT_DIR: './logs/mobilenet_market'
 

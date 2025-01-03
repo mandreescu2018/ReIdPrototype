@@ -19,3 +19,4 @@ models/models_configurations/*
 models_builder/__pycache__/*
 weights_pretrained/resnet50-19c8e357.pth
 logs/*
+functional_logging/__pycache__/*

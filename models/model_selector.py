@@ -35,15 +35,13 @@ class ModelLoader:
             if self.cfg.MODEL.PRETRAIN_CHOICE == 'resume':
                 self._checkpoint = torch.load(self.cfg.MODEL.PRETRAIN_PATH)
             elif self.cfg.MODEL.PRETRAIN_CHOICE == 'test':
-                self._checkpoint = torch.load(self.cfg.TEST.WEIGHT)
+                self._checkpoint = torch.load(self.cfg.TEST.WEIGHT, weights_only=True)
         return self._checkpoint
 
     @property
     def model(self):
         if self._model is None:            
             self._model = model_factory[self.cfg.MODEL.NAME](self.cfg).to(DeviceManager.get_device())
-            # if self.cfg.MODEL.PRETRAIN_CHOICE == 'resume' or self.cfg.MODEL.PRETRAIN_CHOICE == 'test':
-            #     self._model.load_state_dict(self.checkpoint['model_state_dict'])
         return self._model
 
     @property

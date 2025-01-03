@@ -1,17 +1,26 @@
 import os
 from pathlib import Path
 import pandas as pd
+from .base_logging import BaseLogger
 
-class DataFrameLogger:
-    def __init__(self, save_path="logs"):
+class DataFrameLogger(BaseLogger):
+    def __init__(self, cfg):
         """
         Initialize the logger.
         
         Args:
             save_path (str): Path to save the .csv file.
         """
-        self.training_save_path = Path(save_path)/"training_log.csv"
-        self.validation_save_path = Path(save_path)/"validation_log.csv"
+
+        self.training_save_path = Path(cfg.OUTPUT_DIR)/"training_log.csv"
+        self.validation_save_path = Path(cfg.OUTPUT_DIR)/"validation_log.csv"
+        if os.path.isfile(self.training_save_path):
+            with open(self.training_save_path, "w") as f:            
+                f.truncate()
+        if os.path.isfile(self.validation_save_path):
+            with open(self.validation_save_path, "w") as f:            
+                f.truncate()
+        
         self.data = []  # List to store training logs
 
     def log_training(self, epoch, loss, accuracy=None, lr=None, **kwargs):
@@ -45,7 +54,7 @@ class DataFrameLogger:
         dataframe.to_csv(filename, mode='a', header=not file_exists, index=False)
 
     
-    def log_validation(self, epoch, map, cmc):
+    def log_validation(self, live_values):
         """
         Log validation data.
 
@@ -54,18 +63,29 @@ class DataFrameLogger:
             cmc (float): Cumulative matching curve list.            
         """
         entry = {
-            "epoch": [epoch],
-            "map": [map]                        
+            "epoch": [live_values.current_epoch],
+            "map": [live_values.mAP]                        
         }
-        cmc_curve = {f"rank_{i+1}": [cmc[i]] for i in range((len(cmc)))}
+        cmc_curve = {f"rank_{i+1}": [live_values.cmc[i]] for i in range((len(live_values.cmc)))}
         entry.update(cmc_curve) 
         df = pd.DataFrame(entry)
         self.append_to_csv(df, self.validation_save_path)
 
-    def save(self):
+    def on_epoch_end(self, live_values):
         """
-        Save the logged data to a .csv file.
+        Log epoch end data.
+
+        Args:
+            live_values (LiveValues): Object containing live values.
         """
-        df = pd.DataFrame(self.data)
-        df.to_csv(self.save_path, index=False)
-        print(f"Training log saved to {self.save_path}")
+        self.log_training(
+            live_values.current_epoch,
+            live_values.loss_meter.avg,
+            live_values.acc_meter.avg,
+            live_values.learning_rate,
+        )
+    
+    
+    
+    
+

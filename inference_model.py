@@ -22,7 +22,7 @@ if __name__ == '__main__':
     set_seeds(cfg.SOLVER.SEED)
 
     # datasets related
-    train_loader, test_loader, num_classes, number_of_cameras, number_of_camera_tracks, query_num = make_dataloader(cfg)
+    train_loader, test_loader, num_classes, _, _, query_num = make_dataloader(cfg)
 
     cfg.DATASETS.NUMBER_OF_CLASSES = num_classes
     cfg.DATASETS.NUMBER_OF_IMAGES_IN_QUERY = query_num

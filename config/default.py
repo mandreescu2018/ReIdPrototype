@@ -102,9 +102,14 @@ _C.INPUT.PIXEL_MEAN = [0.485, 0.456, 0.406]
 _C.INPUT.PIXEL_STD = [0.229, 0.224, 0.225]
 # Value of padding size
 _C.INPUT.PADDING = 10
-
+# indexes of data provided by train dataloader
 _C.INPUT.TRAIN_KEYS = [0, 1, 2, 3]
+# indexes of data provided by validation dataloader
 _C.INPUT.EVAL_KEYS = [0, 1, 2, 3]
+# index of person id in dataset
+_C.INPUT.PERSON_ID_KEY = 1
+# index of camera id in dataset
+_C.INPUT.CAMERA_ID_KEY = 2
 
 
 # -----------------------------------------------------------------------------
@@ -138,12 +143,6 @@ _C.DATALOADER.K = 8
 _C.DATALOADER.NUM_TEST_IMAGES = 8
 # random select 8 images of each tracklet for train
 _C.DATALOADER.NUM_TRAIN_IMAGES = 8
-# Index of the image in btach output by dataloader
-_C.DATALOADER.BATCH_IMAGE_IDEX = 0
-# Index of the target in batch output by dataloader
-_C.DATALOADER.BATCH_PID_INDEX = 1
-# Index of the camera in batch output by dataloader
-_C.DATALOADER.BATCH_CAM_INDEX = 2
 
 _C.DATALOADER.TRAIN_TRANSFORMS = [
     {'tranform':'resize'}, 
@@ -244,7 +243,6 @@ _C.LOSS.COMPONENTS = [
 # PROCESSOR
 # ---------------------------------------------------------------------------- #
 _C.PROCESSOR = CN()
-_C.PROCESSOR.INPUT_KEYS = 4
 _C.PROCESSOR.TARGET_KEY = 1
 _C.PROCESSOR.IMAGE_KEY = 0
 
@@ -273,17 +271,19 @@ _C.TEST.IMG_TEST_BATCH = 512
 _C.TEST.TEST_BATCH = 32
 _C.TEST.VIS = False
 # ---------------------------------------------------------------------------- #
-# Weights & Biases
+#Logging
 # ---------------------------------------------------------------------------- #
-_C.WANDB = CN()
+_C.LOGGING = CN()
 # Whether to use wandb
-_C.WANDB.USE = False
+_C.LOGGING.WANDB_USE = False
 # Project name in wandb
-_C.WANDB.PROJECT = "reid"
+_C.LOGGING.WANDB_PROJECT = "reid"
 # Experiment name in wandb
-_C.WANDB.NAME = "baseline"
+_C.LOGGING.WANDB_NAME = "baseline"
 # Run id in wandb
-_C.WANDB.RUN_ID = "00000"
+_C.LOGGING.WANDB_RUN_ID = "00000"
+# Whether to use tensorboard
+_C.LOGGING.TENSORBOARD_USE = True
 
 
 # ---------------------------------------------------------------------------- #

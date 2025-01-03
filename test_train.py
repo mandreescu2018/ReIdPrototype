@@ -1,12 +1,13 @@
 import torch
 import argparse
 from config import cfg
-from utils import set_seeds, setup_logger
+from utils import set_seeds
 from models import ModelLoader
 from processors import get_processor
 from loss.loss_factory_prototype import LossComposer
 from solver.make_optimizer import OptimizerFactory
 from solver import LearningRateScheduler
+from functional_logging.stream_logger import StreamLogger
 
 from datasets import make_dataloader
 
@@ -25,11 +26,12 @@ if __name__ == '__main__':
     set_seeds(cfg.SOLVER.SEED)
 
     # logger
-    logger = setup_logger("ReIDPrototype", cfg.OUTPUT_DIR, if_train=True)
+    stream_logger = StreamLogger(cfg=cfg)
+    # logger = stream_logger.setup_logger(if_train=True)
     # logger.info(f"Using {DeviceManager.get_device()} device")
-    logger.info(f"Using {args.config_file} as config file")
-    logger.info(f"Saving model in the path :{cfg.OUTPUT_DIR}")
-    logger.info(cfg)
+    stream_logger.info(f"Using {args.config_file} as config file")
+    stream_logger.info(f"Saving model in the path :{cfg.OUTPUT_DIR}")
+    stream_logger.info(cfg)
 
     train_loader, test_loader, num_classes, number_of_cameras, number_of_camera_tracks, query_num = make_dataloader(cfg)
     
@@ -63,7 +65,6 @@ if __name__ == '__main__':
 
     model_loader.load_param()
 
-    start_epoch = model_loader.start_epoch
     proc = get_processor(cfg)
 
     proc = proc(cfg, 

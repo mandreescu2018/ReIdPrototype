@@ -20,7 +20,7 @@ SOLVER:
   EVAL_PERIOD: 10
 
 PROCESSOR: 
-  INPUT_KEYS: 4
+  # INPUT_KEYS: 4
   TARGET_KEY: 1
 
 LOSS:
@@ -61,10 +61,11 @@ TEST:
   WEIGHT: './logs/0321_market_vit_base/vit_transformer_resume_20.pth'
   NECK_FEAT: 'before'
   FEAT_NORM: 'yes'
-WANDB: 
-  USE: False
-  PROJECT: 'transformer_reid'
-  NAME: '0321_market_vit_base_jpm'
+
+LOGGING:  
+  WANDB_USE: False
+  WANDB_PROJECT: 'transformer_reid'
+  WANDB_NAME: '0321_market_vit_base_jpm'
 
 OUTPUT_DIR: './logs/market_vit_base_jpm'
 

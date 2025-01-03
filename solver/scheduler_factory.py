@@ -2,11 +2,16 @@ from torch.optim.lr_scheduler import StepLR, ExponentialLR, CosineAnnealingLR
 from .warmup_lr_scheduler import WarmupMultiStepLR
 from .cosine_lr import CosineLRScheduler
 
+
 class SchedulerStrategy:
-     """Base class for scheduler strategies."""
-     def __init__(self, optimizer, cfg):
+    """Base class for scheduler strategies."""
+    def __init__(self, optimizer, cfg):
         self.optimizer = optimizer
         self.config = cfg
+
+    @property
+    def scheduler(self):
+        raise NotImplementedError
 
 class WarmupMultiStepLRScheduler(SchedulerStrategy):
     """Wrapper class for WarmupMultiStepLR scheduler."""
@@ -76,12 +81,21 @@ class CosineScheduler(SchedulerStrategy):
                 noise_seed=42,
             )
 
+_scheduler_factory = {
+        "step": StepLRScheduler,
+        "warm_up": WarmupMultiStepLRScheduler,
+        "exponential": ExponentialLRScheduler,
+        "cosine": CosineScheduler,
+        "cosine_annealing": CosineAnealingScheduler
+    }
+
 class LearningRateScheduler:
+    """Factory class for the learning rate scheduler."""
     def __init__(self, optimizer, cfg):
         """
         Args:
             optimizer (torch.optim.Optimizer): Optimizer instance.
-            cfg (dict): configuration values, including the scheduler type.                
+            cfg (dict): configuration values.                
         """
         self.optimizer = optimizer
         self.config = cfg
@@ -89,19 +103,13 @@ class LearningRateScheduler:
         
 
     def _build_scheduler(self):
+        """
+        Factory method to build the scheduler.
+        """
         scheduler_type = self.config.SOLVER.SCHEDULER
+        return _scheduler_factory[scheduler_type](self.optimizer, self.config).scheduler
 
-        if scheduler_type == "step":
-            return StepLRScheduler(self.optimizer, self.config).scheduler
-        elif scheduler_type == "warm_up":
-            return WarmupMultiStepLRScheduler(self.optimizer, self.config).scheduler
-        elif scheduler_type == "exponential":
-            return ExponentialLRScheduler(self.optimizer, self.config).scheduler
-        elif scheduler_type == "cosine":
-            return CosineScheduler(self.optimizer, self.config).scheduler
-        else:
-            raise ValueError(f"Unknown scheduler type: {scheduler_type}")
-
+        
     def load_state_dict(self, state_dict):
         """
         Loads the state of the scheduler.

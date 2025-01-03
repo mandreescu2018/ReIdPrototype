@@ -25,7 +25,6 @@ SOLVER:
   WARMUP_METHOD: 'linear'
 
 PROCESSOR: 
-  INPUT_KEYS: 1 # number of items that will be passed to the model
   TARGET_KEY: 1 # position of person id in the input values
 
 LOSS:
@@ -64,10 +63,10 @@ TEST:
   # NECK_FEAT: 'before'
   NECK_FEAT: 'after'
   FEAT_NORM: 'yes'
-  
-WANDB: 
-  USE: False
-  PROJECT: 'resnet_market'
-  NAME: 'market_resnet_base'
+
+LOGGING:
+  WANDB_USE: False
+  WANDB_PROJECT: 'resnet_market'
+  WANDB_NAME: 'market_resnet_base'
 OUTPUT_DIR: './logs/bag_of_tricks_market'
 

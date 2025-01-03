@@ -23,7 +23,7 @@ SOLVER:
   MARGIN: None
 
 PROCESSOR: 
-  INPUT_KEYS: 4
+  # INPUT_KEYS: 4
   TARGET_KEY: 1
 
 LOSS:
@@ -56,10 +56,10 @@ TEST:
   WEIGHT: './logs/msmt17_vit_base/vit_transformer_resume_120.pth'
   NECK_FEAT: 'before'
   FEAT_NORM: 'yes'
-  
-# WANDB: 
-#   USE: True
-#   PROJECT: 'transformer_reid_msmt17'
-#   NAME: 'msmt17_vit_base_bis'
+
+LOGGING:
+  WANDB_USE: False
+  WANDB_PROJECT: 'transformer_reid_msmt17'
+  WANDB_NAME: 'msmt17_vit_base_bis'
 OUTPUT_DIR: './logs/msmt17_vit_base'
 

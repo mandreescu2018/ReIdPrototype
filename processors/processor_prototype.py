@@ -10,13 +10,17 @@ class ProcessorPrototype(ProcessorBase):
          super(ProcessorPrototype, self).train()         
          self.scaler = amp.GradScaler(self.device)
 
-         for epoch in range(self.start_epoch+1, self.epochs+1):
-                self.reset_metrics()                
+         for epoch in range(self.start_epoch+1, self.max_epochs+1):
+                
+                self.live_values.reset_metrics()
+
                 self.scheduler.step(epoch)
-                start_time = time.time()
-                self.current_epoch = epoch
-                self.train_step()                
-                self.on_epoch_end(start_time)
+
+                self.live_values.current_start_time = time.time()
+                self.live_values.current_epoch = epoch
+
+                self.train_step()       
+                self.on_epoch_end()
                 
                 if epoch % self.config.SOLVER.EVAL_PERIOD == 0 or epoch == 1:
                     self.validation_step()
@@ -49,19 +53,8 @@ class ProcessorPrototype(ProcessorBase):
                 self.scaler.step(self.optimizer_center)
                 self.scaler.update()
             
-            def calculate_accuracy(outputs_, target):
-                index = self.config.LOSS.ID_LOSS_OUTPUT_INDEX if isinstance(outputs_, tuple) else 0
-                id_classifier_output = outputs_[index]
-                id_hat_element = id_classifier_output[0] if isinstance(id_classifier_output, list) else id_classifier_output
-                acc = (id_hat_element.max(1)[1] == target).float().mean()
-
-                return acc
-
-            acc = calculate_accuracy(outputs, target)            
-
-            self.loss_meter.update(loss.item(), self.train_loader.batch_size)
-            self.acc_meter.update(acc.item(), 1)
-
+            self.live_values.update(loss, outputs, target)
+            
             torch.cuda.synchronize()
             self.log_training_details(n_iter)
             
