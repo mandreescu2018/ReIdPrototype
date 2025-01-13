@@ -4,10 +4,10 @@ from.processor_base import ProcessorBase
 import time
 import os
 
-class ProcessorPrototype(ProcessorBase):
+class ProcessorStandard(ProcessorBase):
 
     def train(self):
-         super(ProcessorPrototype, self).train()         
+         super(ProcessorStandard, self).train()         
          self.scaler = amp.GradScaler(self.device)
 
          for epoch in range(self.start_epoch+1, self.max_epochs+1):
@@ -28,7 +28,7 @@ class ProcessorPrototype(ProcessorBase):
                     self.save_model_for_resume(os.path.join(self.config.OUTPUT_DIR, self.config.MODEL.NAME + '_resume_{}.pth'.format(epoch))) 
 
     def train_step(self):
-        super(ProcessorPrototype, self).train_step()
+        super(ProcessorStandard, self).train_step()
         for n_iter, batch in enumerate(self.train_loader):
             self.zero_grading()
             

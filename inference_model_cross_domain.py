@@ -1,9 +1,9 @@
 import time
+import torch
 import argparse
 from config import cfg
 from utils import set_seeds
 from datasets import make_dataloader
-# from datasets.make_dataloader_trans import make_dataloader
 from models import ModelLoader
 from processors.processor_standard import ProcessorStandard
 
@@ -28,7 +28,7 @@ if __name__ == '__main__':
     cfg.DATASETS.NUMBER_OF_IMAGES_IN_QUERY = query_num
     
     # Model
-    cfg.MODEL.PRETRAIN_CHOICE = 'test'
+    cfg.MODEL.PRETRAIN_CHOICE = 'cross_domain'
     model_loader = ModelLoader(cfg)
     model_loader.load_param()
     
@@ -36,6 +36,7 @@ if __name__ == '__main__':
                                 model_loader.model, 
                                 train_loader, 
                                 test_loader)
+    
     start = time.perf_counter()
     
     proc.inference()

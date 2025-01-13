@@ -30,9 +30,11 @@ if __name__ == "__main__":
     # torch.optim.SGD(params, momentum=self.cfg.SOLVER.MOMENTUM)
 
     # Initialize the dynamic scheduler
-    cfg.SOLVER.SCHEDULER = "cosine"
-    cfg.SOLVER.BASE_LR = 0.008
+    cfg.SOLVER.SCHEDULER = "step"
+    cfg.SOLVER.BASE_LR = 0.1
     cfg.SOLVER.WARMUP_ITERS = 5
+    cfg.STEPS = [10]
+    cfg.GAMMA=0.1
     dynamic_lr_scheduler = LearningRateScheduler(optimizer, cfg)
     
     # dynamic_lr_scheduler = make_scheduler(cfg, optimizer)

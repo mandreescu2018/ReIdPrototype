@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import pandas as pd
 from .base_logging import BaseLogger
+from config.constants import *
 
 class DataFrameLogger(BaseLogger):
     def __init__(self, cfg):
@@ -12,8 +13,8 @@ class DataFrameLogger(BaseLogger):
             save_path (str): Path to save the .csv file.
         """
 
-        self.training_save_path = Path(cfg.OUTPUT_DIR)/"training_log.csv"
-        self.validation_save_path = Path(cfg.OUTPUT_DIR)/"validation_log.csv"
+        self.training_save_path = Path(cfg.OUTPUT_DIR)/TRAINING_LOG_CSV.format(cfg.EXPERIMENT_NAME)
+        self.validation_save_path = Path(cfg.OUTPUT_DIR)/VALIDATION_LOG_CSV.format(cfg.EXPERIMENT_NAME)
         if os.path.isfile(self.training_save_path):
             with open(self.training_save_path, "w") as f:            
                 f.truncate()

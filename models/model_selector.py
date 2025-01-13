@@ -15,7 +15,6 @@ model_factory = {
     # 'resnet50': ResNetBuilder,
     'simple_resnet50': SimpleReIDModel,
     'hacnn': HACNNBuilder
-
 }
 
 class ModelLoader:
@@ -34,7 +33,7 @@ class ModelLoader:
         if self._checkpoint is None:
             if self.cfg.MODEL.PRETRAIN_CHOICE == 'resume':
                 self._checkpoint = torch.load(self.cfg.MODEL.PRETRAIN_PATH)
-            elif self.cfg.MODEL.PRETRAIN_CHOICE == 'test':
+            elif self.cfg.MODEL.PRETRAIN_CHOICE == 'test' or self.cfg.MODEL.PRETRAIN_CHOICE == 'cross_domain':
                 self._checkpoint = torch.load(self.cfg.TEST.WEIGHT, weights_only=True)
         return self._checkpoint
 
@@ -82,6 +81,12 @@ class ModelLoader:
     def scheduler(self, scheduler):
         self._scheduler = scheduler
 
+    def load_param_cross(self, param_dict):
+        for i in param_dict:            
+            if 'classifier' in i:
+                continue
+            self.model.state_dict()[i].copy_(param_dict[i])
+
     def load_param(self):
         
         if self.cfg.MODEL.PRETRAIN_CHOICE == 'resume':
@@ -95,6 +100,8 @@ class ModelLoader:
             self._scheduler.load_state_dict(self.checkpoint['scheduler_state_dict'])
         elif self.cfg.MODEL.PRETRAIN_CHOICE == 'test':
             self.model.load_state_dict(self.checkpoint['model_state_dict'])
+        elif self.cfg.MODEL.PRETRAIN_CHOICE == 'cross_domain':
+            self.load_param_cross(self.checkpoint['model_state_dict'])
             
         
     

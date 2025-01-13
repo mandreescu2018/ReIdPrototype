@@ -20,3 +20,5 @@ models_builder/__pycache__/*
 weights_pretrained/resnet50-19c8e357.pth
 logs/*
 functional_logging/__pycache__/*
+test_visualization.py
+utils/grad_cam.py

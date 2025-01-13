@@ -1,14 +1,14 @@
 MODEL:
   PRETRAIN_CHOICE: 'resume'
   # PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
-  PRETRAIN_PATH: './logs/msmt17_vit_base/vit_transformer_resume_80.pth'
+  PRETRAIN_PATH: './logs/msmt17_vit_base/vit_transformer_resume_20.pth'
   NAME: 'vit_transformer'
   TRANSFORMER_TYPE: 'vit_base_patch16_224_TransReID'
   STRIDE_SIZE: [16, 16]
 
 SOLVER:
   OPTIMIZER_NAME: 'SGD'
-  MAX_EPOCHS: 140
+  MAX_EPOCHS: 120
   BASE_LR: 0.008
   IMS_PER_BATCH: 64
   FEATURE_DIMENSION: 2048
@@ -54,8 +54,8 @@ DATALOADER:
   NUM_WORKERS: 8
 
 DATASETS:
-  NAMES: msmt17
-  DIR: 'MSMT17_V1'
+  NAMES: ('occ_duke')
+  DIR: 'occluded_duke'
 
 TEST:
   EVAL: True
@@ -70,5 +70,4 @@ LOGGING:
   WANDB_PROJECT: 'transformer_reid_msmt17'
   WANDB_NAME: 'msmt17_vit_base_bis'
 OUTPUT_DIR: './logs/msmt17_vit_base'
-EXPERIMENT_NAME: 'vit_base_msmt17_bis'
 

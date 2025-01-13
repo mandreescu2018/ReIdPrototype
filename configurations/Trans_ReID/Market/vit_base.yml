@@ -71,4 +71,6 @@ LOGGING:
   WANDB_PROJECT: 'transformer_vit_market_base'
   WANDB_NAME: 'market_vit_base'
 OUTPUT_DIR: './logs/market_vit_base'
+# EXPERIMENT_NAME: 'vit_base_market_norm_imgnet_close'
+EXPERIMENT_NAME: 'vit_base_market'
 

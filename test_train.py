@@ -27,7 +27,6 @@ if __name__ == '__main__':
 
     # logger
     stream_logger = StreamLogger(cfg=cfg)
-    # logger = stream_logger.setup_logger(if_train=True)
     # logger.info(f"Using {DeviceManager.get_device()} device")
     stream_logger.info(f"Using {args.config_file} as config file")
     stream_logger.info(f"Saving model in the path :{cfg.OUTPUT_DIR}")

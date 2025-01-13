@@ -44,7 +44,7 @@ class DukeMTMCreID(BaseDataset):
         self.load_data_statistics()
         
         if verbose:
-            print("=> Occluded DukeMTMC-reID loaded")
+            print("=> DukeMTMC-reID loaded")
             self.print_dataset_statistics()
 
     def _process_dir(self, dir_path, relabel=False):

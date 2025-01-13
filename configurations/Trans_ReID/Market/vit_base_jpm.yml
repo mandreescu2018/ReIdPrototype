@@ -68,4 +68,4 @@ LOGGING:
   WANDB_NAME: '0321_market_vit_base_jpm'
 
 OUTPUT_DIR: './logs/market_vit_base_jpm'
-
+EXPERIMENT_NAME: 'vit_base_market_jpm'

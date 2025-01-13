@@ -1,12 +1,12 @@
-from .processor_prototype import ProcessorPrototype
+from .processor_standard import ProcessorStandard
 
 __factory = {
-    'vit_transformer': ProcessorPrototype,
-    'vit_transformer_jpm': ProcessorPrototype,
-    'mobilenet_v2': ProcessorPrototype,
-    'resnet50': ProcessorPrototype,
-    'simple_resnet50': ProcessorPrototype,
-    'hacnn': ProcessorPrototype
+    'vit_transformer': ProcessorStandard,
+    'vit_transformer_jpm': ProcessorStandard,
+    'mobilenet_v2': ProcessorStandard,
+    'resnet50': ProcessorStandard,
+    'simple_resnet50': ProcessorStandard,
+    'hacnn': ProcessorStandard
 }
 
 def get_processor(cfg):

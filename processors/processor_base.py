@@ -27,7 +27,6 @@ class ProcessorBase:
         self.start_epoch = start_epoch
 
         self.max_epochs = cfg.SOLVER.MAX_EPOCHS
-        self.current_epoch = 0        
         self.device = DeviceManager.get_device().type
         self.live_values = MetricsLiveValues(cfg)
         self.live_values.train_loader_length = len(train_loader)
@@ -80,11 +79,8 @@ class ProcessorBase:
         self.live_values.reset_metrics()
         cmc, mAP = self.model_evaluation()
        
-        print("Inference Results ")
-        print(f"mAP: {mAP:.3%}")
-        for r in [1, 5, 10, 20]:
-            print(f"CMC curve, Rank-{r:<3}:{cmc[r - 1]:.3%}")
-
+        self.composite_logger.info('Inference Results')
+        self.composite_logger.log_validation(self.live_values)
 
     # LOGGING
     def on_epoch_end(self):
@@ -106,7 +102,7 @@ class ProcessorBase:
     def save_model_for_resume(self,
                           path: str):
         torch.save({
-                'epoch': self.current_epoch,
+                'epoch': self.live_values.current_epoch,
                 'model_state_dict': self.model.state_dict(),
                 'optimizer_state_dict': self.optimizer.state_dict(),
                 'center_criterion_state_dict': self.center_criterion.state_dict() if self.center_criterion is not None else None,

@@ -5,20 +5,23 @@ from .base_logging import BaseLogger
 import time
 
 class StreamLogger(BaseLogger):
-    def __init__(self, cfg, if_train=True):
+    def __init__(self, cfg):
+        self.training = True
+        if cfg.MODEL.PRETRAIN_CHOICE == 'test' or cfg.MODEL.PRETRAIN_CHOICE == 'cross_domain':
+            self.training = False
+                
         self.logger_name = cfg.MODEL.NAME + '_' + cfg.DATASETS.NAMES
-        self.save_dir = cfg.OUTPUT_DIR  
+        self.save_dir = cfg.OUTPUT_DIR
         self.config = cfg
 
         if self.logger_name not in logging.Logger.manager.loggerDict.keys():
-            self.logger = self.setup_logger(if_train)
+            self.logger = self._setup_logger()
         else:
             self.logger = logging.getLogger(self.logger_name)
         
-             
         self.logger.setLevel(logging.DEBUG)
 
-    def setup_logger(self, if_train):
+    def _setup_logger(self):
         logger = logging.getLogger(self.logger_name)
         logger.setLevel(logging.DEBUG)
 
@@ -31,7 +34,7 @@ class StreamLogger(BaseLogger):
         if self.save_dir:
             if not os.path.exists(self.save_dir):
                 os.makedirs(self.save_dir)
-            if if_train:
+            if self.training:
                 fh = logging.FileHandler(os.path.join(self.save_dir, "train_log.txt"), mode='w')
             else:
                 fh = logging.FileHandler(os.path.join(self.save_dir, "test_log.txt"), mode='w')

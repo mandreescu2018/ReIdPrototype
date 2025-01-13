@@ -70,4 +70,5 @@ LOGGING:
   WANDB_PROJECT: 'resnet_market'
   WANDB_NAME: 'market_resnet_base'
 OUTPUT_DIR: './logs/bag_of_tricks_market_ls_center_bnneck'
+EXPERIMENT_NAME: 'b_of_t_market_warmup'
 

@@ -7,44 +7,12 @@ class MetricsLiveValues:
         self.acc_meter = AverageMeter()
         self.loss_meter = AverageMeter()
         self.evaluator = R1_mAP_eval(cfg.DATASETS.NUMBER_OF_IMAGES_IN_QUERY, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)
-        self._current_epoch = 0
-        self._learning_rate = 0
-        self._train_loader_length = 0
-        self._current_start_time = None
+        self.current_epoch = 0
+        self.learning_rate = 0
+        self.train_loader_length = 0
+        self.current_start_time = None
         self.mAP = 0
         self.cmc = None
-    
-    @property
-    def current_epoch(self):
-        return self._current_epoch  
-
-    @current_epoch.setter
-    def current_epoch(self, value):
-        self._current_epoch = value
-    
-    @property
-    def learning_rate(self):
-        return self._learning_rate
-    
-    @learning_rate.setter
-    def learning_rate(self, value):
-        self._learning_rate = value
-
-    @property
-    def train_loader_length(self):
-        return self._train_loader_length
-    
-    @train_loader_length.setter
-    def train_loader_length(self, value):
-        self._train_loader_length = value
-
-    @property
-    def current_start_time(self):
-        return self._current_start_time
-    
-    @current_start_time.setter
-    def current_start_time(self, value):
-        self._current_start_time = value
 
     def reset_metrics(self):
         self.acc_meter.reset()

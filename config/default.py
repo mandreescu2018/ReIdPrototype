@@ -120,7 +120,7 @@ _C.DATASETS = CN()
 _C.DATASETS.NAMES = ('market1501')
 # Root directory where datasets should be used (and downloaded if not found)
 # _C.DATASETS.ROOT_DIR = '/home/Datasets'
-_C.DATASETS.ROOT_DIR = 'C:\datasets'
+_C.DATASETS.ROOT_DIR = 'D:\datasets'
 # folder where images are stored
 _C.DATASETS.DIR = ('market1501')
 
@@ -291,3 +291,4 @@ _C.LOGGING.TENSORBOARD_USE = True
 # ---------------------------------------------------------------------------- #
 # Path to checkpoint and saved log of trained model
 _C.OUTPUT_DIR = ""
+_C.EXPERIMENT_NAME = "baseline"

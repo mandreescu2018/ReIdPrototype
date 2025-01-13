@@ -1,14 +1,15 @@
 MODEL:
-  PRETRAIN_CHOICE: 'resume'
-  # PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
-  PRETRAIN_PATH: './logs/msmt17_vit_base/vit_transformer_resume_80.pth'
+  PRETRAIN_CHOICE: 'imagenet'
+  PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
+  # PRETRAIN_PATH: './logs/dukemtmc_vit_base/vit_transformer_resume_30.pth'
   NAME: 'vit_transformer'
   TRANSFORMER_TYPE: 'vit_base_patch16_224_TransReID'
+  NO_MARGIN: True
   STRIDE_SIZE: [16, 16]
 
 SOLVER:
   OPTIMIZER_NAME: 'SGD'
-  MAX_EPOCHS: 140
+  MAX_EPOCHS: 120
   BASE_LR: 0.008
   IMS_PER_BATCH: 64
   FEATURE_DIMENSION: 2048
@@ -24,9 +25,6 @@ SOLVER:
   WARMUP_ITERS: 5
   WARMUP_METHOD: 'linear'
 
-PROCESSOR: 
-  # INPUT_KEYS: 4
-  TARGET_KEY: 1
 
 LOSS:
   ID_LOSS_TYPE: 'cross_entropy'
@@ -38,6 +36,10 @@ LOSS:
     {"type": "triplet", "weight": 1.0, "output_index": 1, "margin": None},
   ]
 
+
+PROCESSOR: 
+  # INPUT_KEYS: 4
+  TARGET_KEY: 1
 
 INPUT:
   SIZE_TRAIN: [256, 128]
@@ -54,21 +56,19 @@ DATALOADER:
   NUM_WORKERS: 8
 
 DATASETS:
-  NAMES: msmt17
-  DIR: 'MSMT17_V1'
+  NAMES: ('occ_duke')
+  DIR: 'occluded_duke'
 
 TEST:
   EVAL: True
   IMS_PER_BATCH: 256
   RE_RANKING: False
-  WEIGHT: './logs/msmt17_vit_base/vit_transformer_resume_120.pth'
+  WEIGHT: './logs/dukemtmc_vit_base/vit_transformer_resume_120.pth'
   NECK_FEAT: 'before'
   FEAT_NORM: 'yes'
-
 LOGGING:
   WANDB_USE: False
-  WANDB_PROJECT: 'transformer_reid_msmt17'
-  WANDB_NAME: 'msmt17_vit_base_bis'
-OUTPUT_DIR: './logs/msmt17_vit_base'
-EXPERIMENT_NAME: 'vit_base_msmt17_bis'
+  WANDB_PROJECT: 'vit_reid_dukemtmc'
+  WANDB_NAME: 'dukemtmc_vit_base'
+OUTPUT_DIR: './logs/dukemtmc_vit_base'
 

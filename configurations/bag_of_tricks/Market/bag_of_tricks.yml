@@ -69,4 +69,5 @@ LOGGING:
   WANDB_PROJECT: 'resnet_market'
   WANDB_NAME: 'market_resnet_base'
 OUTPUT_DIR: './logs/bag_of_tricks_market'
+EXPERIMENT_NAME: 'b_o_t_market'
 
