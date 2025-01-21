@@ -5,3 +5,4 @@ yacs
 pandas
 timm
 wandb
+tensorboard
