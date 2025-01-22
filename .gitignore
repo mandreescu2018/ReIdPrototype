@@ -22,3 +22,4 @@ logs/*
 functional_logging/__pycache__/*
 test_visualization.py
 utils/grad_cam.py
+test_graph.py

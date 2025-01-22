@@ -88,8 +88,8 @@ if __name__ == '__main__':
     validation_data_path = Path(cfg.OUTPUT_DIR)/"validation_log.csv"
 
     dframe = pd.read_csv(validation_data_path)
-    # plot_cmc(dframe)
-    plot_map(dframe)
+    plot_cmc(dframe)
+    # plot_map(dframe)
     # plot_with_matplotlib(dframe)
     # print(dframe.head())
     # print(dframe["map"].values)
