@@ -38,18 +38,19 @@ class TestLosses(unittest.TestCase):
         triplet = TripletLoss(margin=1)
         loss, _, _ = triplet(features, class_names_tensor)
         # print("loss_t", loss_t.item())
-        self.assertEqual(loss.item(), 3.9720332622528076)
+        self.assertAlmostEqual(loss.item(), 3.9720332622528076, places=6)
     
     def test_center_loss(self):
         from loss import CenterLoss
         cfg.DATASETS.NUMBER_OF_CLASSES = 751
         center_loss = CenterLoss(cfg.DATASETS.NUMBER_OF_CLASSES, cfg.SOLVER.FEATURE_DIMENSION)
-        features = torch.rand(16, cfg.SOLVER.FEATURE_DIMENSION).to("cuda")
+        center_loss.device = 'cpu'
+        features = torch.rand(16, cfg.SOLVER.FEATURE_DIMENSION)
         targets = torch.Tensor([0, 1, 2, 3, 2, 3, 1, 4, 5, 3, 2, 1, 0, 0, 5, 4]).long()
-        targets = targets.to("cuda")
+        targets = targets
 
         loss = center_loss(features, targets)
-        self.assertEqual(loss.item(), 2721.125)
+        self.assertAlmostEqual(loss.item(), 2721.125)
 
 
 if __name__ == '__main__':

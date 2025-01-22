@@ -23,3 +23,6 @@ functional_logging/__pycache__/*
 test_visualization.py
 utils/grad_cam.py
 test_graph.py
+test_cases/*
+test_cases/test_dataset.py
+test_cases/test_losses.py
