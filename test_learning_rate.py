@@ -24,16 +24,17 @@ if __name__ == "__main__":
 
     learning_rates =[]
     # Example model and optimizer
+    cfg.SOLVER.BASE_LR = 0.0001
     model = nn.Linear(10, 1)
-    # optimizer = torch.optim.Adam(model.parameters(), lr=cfg.SOLVER.BASE_LR)
-    optimizer = torch.optim.SGD(model.parameters(), momentum=cfg.SOLVER.MOMENTUM)
+    optimizer = torch.optim.Adam(model.parameters(), lr=cfg.SOLVER.BASE_LR)
+    # optimizer = torch.optim.SGD(model.parameters(), momentum=cfg.SOLVER.MOMENTUM)
     # torch.optim.SGD(params, momentum=self.cfg.SOLVER.MOMENTUM)
 
     # Initialize the dynamic scheduler
-    cfg.SOLVER.SCHEDULER = "step"
-    cfg.SOLVER.BASE_LR = 0.1
-    cfg.SOLVER.WARMUP_ITERS = 5
-    cfg.STEPS = [10]
+    cfg.SOLVER.SCHEDULER = "warm_up"
+    cfg.SOLVER.BASE_LR = 0.0001
+    cfg.SOLVER.WARMUP_ITERS = 0
+    cfg.SOLVER.STEPS = [40, 70]
     cfg.GAMMA=0.1
     dynamic_lr_scheduler = LearningRateScheduler(optimizer, cfg)
     
