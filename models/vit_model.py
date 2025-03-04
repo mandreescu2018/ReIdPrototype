@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
 import copy
+from config.constants import *
 from loss.metric_learning import Arcface, Cosface, AMSoftmax, CircleLoss
+from utils.weight_utils import weights_init_classifier, weights_init_kaiming
 from .backbones.vit_pytorch import vit_base_patch16_224_TransReID, vit_small_patch16_224_TransReID, deit_small_patch16_224_TransReID
 
 factory_T_type = {
@@ -37,37 +39,76 @@ def shuffle_unit(features, shift, group, begin=1):
 
     return x
 
-def weights_init_kaiming(m):
-    classname = m.__class__.__name__
-    if classname.find('Linear') != -1:
-        nn.init.kaiming_normal_(m.weight, a=0, mode='fan_out')
-        nn.init.constant_(m.bias, 0.0)
-
-    elif classname.find('Conv') != -1:
-        nn.init.kaiming_normal_(m.weight, a=0, mode='fan_in')
-        if m.bias is not None:
-            nn.init.constant_(m.bias, 0.0)
-    elif classname.find('BatchNorm') != -1:
-        if m.affine:
-            nn.init.constant_(m.weight, 1.0)
-            nn.init.constant_(m.bias, 0.0)
-
-def weights_init_classifier(m):
-    classname = m.__class__.__name__
-    if classname.find('Linear') != -1:
-        nn.init.normal_(m.weight, std=0.001)
-        if m.bias:
-            nn.init.constant_(m.bias, 0.0)
-
 
 def set_classifier(cfg):
     num_classes = cfg.DATASETS.NUMBER_OF_CLASSES
-    in_planes = 768
+    in_planes = HIDDEN_SIZE_VIT_BASE
     classifier = None
     
     if cfg.LOSS.ID_LOSS_TYPE in ('arcface', 'cosface', 'amsoftmax', 'circle'):
         classifier = id_loss_factory[cfg.LOSS.ID_LOSS_TYPE](in_planes, num_classes, s=cfg.SOLVER.COSINE_SCALE, m=cfg.SOLVER.COSINE_MARGIN)        
     return classifier
+
+class TransformerConfig:
+    def __init__(self, cfg):
+        self.config = cfg
+        self._img_size = None
+        self._embedding_dimension = HIDDEN_SIZE_VIT_BASE
+        
+    @property
+    def camera(self):
+        return self.config.DATASETS.NUMBER_OF_CAMERAS if self.config.MODEL.SIE_CAMERA else 0
+    
+    @property
+    def view(self):
+        return self.config.DATASETS.NUMBER_OF_TRACKS if self.config.MODEL.SIE_VIEW else 0
+    
+    @property
+    def img_size(self):
+        if self._img_size is None:
+            self._img_size = self.config.INPUT.SIZE_TRAIN
+        return self._img_size
+    
+    @property
+    def sie_xishu(self):
+        return self.config.MODEL.SIE_COEFFICIENT
+    
+    @property
+    def stride_size(self):
+        return self.config.MODEL.STRIDE_SIZE
+    
+    @property
+    def drop_path_rate(self):
+        return self.config.MODEL.DROP_PATH
+    
+    @property
+    def patch_size(self):
+        return VIT_PATCH_SIZE
+    
+    @property
+    def input_channels(self):
+        return DEFAULT_INPUT_CHANNELS
+    
+    @property
+    def embedding_dimension(self):
+        if self.config.MODEL.TRANSFORMER_TYPE == 'deit_small_patch16_224_TransReID':
+            self._embedding_dimension = 384
+        return self._embedding_dimension
+    
+    @property
+    def drop_out_rate(self):
+        return self.config.MODEL.DROP_OUT
+    
+    @property
+    def attn_drop_rate(self):
+        return self.config.MODEL.ATT_DROP_RATE
+    
+    @property
+    def local_feature(self):
+        if self.config.MODEL.NAME == "vit_transformer_jpm":
+            return True
+        return False
+    
 
 class build_transformer(nn.Module):
     def __init__(self, cfg):
@@ -75,19 +116,15 @@ class build_transformer(nn.Module):
         self.cos_layer = cfg.MODEL.COS_LAYER
         self.neck = cfg.MODEL.NECK
         self.neck_feat = cfg.TEST.NECK_FEAT
-        self.in_planes = 768
+
+        transformer_config = TransformerConfig(cfg)
+
+        self.in_planes = transformer_config.embedding_dimension
 
         print(f'using Transformer_type: {cfg.MODEL.TRANSFORMER_TYPE} as a backbone')
 
-        camera_num = cfg.DATASETS.NUMBER_OF_CAMERAS if cfg.MODEL.SIE_CAMERA else 0
-        view_num = cfg.DATASETS.NUMBER_OF_TRACKS if cfg.MODEL.SIE_VIEW else 0
-
-        self.base = factory_T_type[cfg.MODEL.TRANSFORMER_TYPE](img_size=cfg.INPUT.SIZE_TRAIN, sie_xishu=cfg.MODEL.SIE_COE,
-                                                        camera=camera_num, view=view_num, stride_size=cfg.MODEL.STRIDE_SIZE, drop_path_rate=cfg.MODEL.DROP_PATH,
-                                                        drop_rate= cfg.MODEL.DROP_OUT,
-                                                        attn_drop_rate=cfg.MODEL.ATT_DROP_RATE)
-        if cfg.MODEL.TRANSFORMER_TYPE == 'deit_small_patch16_224_TransReID':
-            self.in_planes = 384
+        self.base = factory_T_type[cfg.MODEL.TRANSFORMER_TYPE](transformer_config)
+        
         if cfg.MODEL.PRETRAIN_CHOICE == 'imagenet':
             self.base.load_param(cfg.MODEL.PRETRAIN_PATH)
             print(f'Loading pretrained ImageNet model......from {cfg.MODEL.PRETRAIN_PATH}')
@@ -132,14 +169,14 @@ class build_transformer_local(nn.Module):
         self.cos_layer = cfg.MODEL.COS_LAYER
         self.neck = cfg.MODEL.NECK
         self.neck_feat = cfg.TEST.NECK_FEAT
-        self.in_planes = 768
+
+        transformer_config = TransformerConfig(cfg)
+
+        self.in_planes = transformer_config.embedding_dimension
 
         print(f'using Transformer_type: {cfg.MODEL.TRANSFORMER_TYPE} as a backbone'.format())
 
-        camera_num = cfg.DATASETS.NUMBER_OF_CAMERAS if cfg.MODEL.SIE_CAMERA else 0            
-        view_num = cfg.DATASETS.NUMBER_OF_TRACKS if cfg.MODEL.SIE_VIEW else 0
-            
-        self.base = factory_T_type[cfg.MODEL.TRANSFORMER_TYPE](img_size=cfg.INPUT.SIZE_TRAIN, sie_xishu=cfg.MODEL.SIE_COE, local_feature=True, camera=camera_num, view=view_num, stride_size=cfg.MODEL.STRIDE_SIZE, drop_path_rate=cfg.MODEL.DROP_PATH)
+        self.base = factory_T_type[cfg.MODEL.TRANSFORMER_TYPE](transformer_config)
 
         if cfg.MODEL.PRETRAIN_CHOICE == 'imagenet':
             self.base.load_param(cfg.MODEL.PRETRAIN_PATH)

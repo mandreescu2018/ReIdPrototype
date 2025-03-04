@@ -5,6 +5,7 @@ from .resnet_CBN import ResNetBuilder
 from .simple_model import SimpleReIDModel
 from .resnet_BoT import BagOfTricksBuilder
 from .hacnn_model import HACNNBuilder
+from .QAConv import QAConvBuilder
 from utils.device_manager import DeviceManager
 
 model_factory = {
@@ -12,7 +13,7 @@ model_factory = {
     'vit_transformer_jpm': build_transformer_local,
     'mobilenet_v2': MobileNetV2,
     'resnet50': BagOfTricksBuilder,
-    # 'resnet50': ResNetBuilder,
+    'qaconv': QAConvBuilder,
     'simple_resnet50': SimpleReIDModel,
     'hacnn': HACNNBuilder
 }

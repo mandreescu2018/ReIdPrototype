@@ -28,7 +28,7 @@ class ProcessorStandard(ProcessorBase):
                     self.save_model_for_resume(os.path.join(self.config.OUTPUT_DIR, self.config.MODEL.NAME + '_resume_{}.pth'.format(epoch))) 
 
     def train_step(self):
-        super(ProcessorStandard, self).train_step()
+        self.model.train()
         for n_iter, batch in enumerate(self.train_loader):
             self.zero_grading()
             

@@ -30,6 +30,8 @@ import torch.nn.functional as F
 # from torch._six import container_abcs
 import collections.abc as container_abcs
 
+from config.constants import *
+
 
 # From PyTorch internals
 def _ntuple(n):
@@ -70,14 +72,39 @@ class DropPath(nn.Module):
     def forward(self, x):
         return drop_path(x, self.drop_prob, self.training)
 
+# class MLPBlock(nn.Module):
+#     def __init__(self, 
+#                  embedding_dim:int=768, 
+#                  mlp_size:int=3072,
+#                  dropout:float=0.1):
+#         super(MLPBlock, self).__init__()
 
+#         # layer norm
+#         self.layer_norm = nn.LayerNorm(normalized_shape=embedding_dim)
+
+#         # create the MLP block
+#         self.mlp = nn.Sequential(
+#             nn.Linear(embedding_dim, mlp_size),
+#             nn.GELU(),
+#             nn.Dropout(p=dropout),
+#             nn.Linear(mlp_size, embedding_dim),
+#             nn.Dropout(p=dropout)
+#         )
+
+#     def forward(self, x):
+#         return self.mlp(self.layer_norm(x))
+    
 class Mlp(nn.Module):
-    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
+    def __init__(self,
+                 in_features,
+                 hidden_features=None,
+                 out_features=None,
+                 drop=0.):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
         self.fc1 = nn.Linear(in_features, hidden_features)
-        self.act = act_layer()
+        self.act = nn.GELU()
         self.fc2 = nn.Linear(hidden_features, out_features)
         self.drop = nn.Dropout(drop)
 
@@ -118,19 +145,58 @@ class Attention(nn.Module):
         return x
 
 
-class Block(nn.Module):
+# class TransformerEncoderBlock(nn.Module):
+#     def __init__(self,
+#                  embedding_dim:int=768, # hidden size D from table 1
+#                  num_heads:int=12, # from table 1
+#                  mlp_size:int=3072, # from table 1
+#                  mlp_dropout:float=0.1,
+#                  attn_dropout:float=0):
+#         super(TransformerEncoderBlock, self).__init__()
+        
+#         # create msa block (eq. 2)
+#         self.msa_block = MultiHeadSelfAttentionBlock(embedding_dim=embedding_dim,
+#                                                      num_heads=num_heads,
+#                                                      attn_dropout=attn_dropout)
 
-    def __init__(self, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
-                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
+#         # create mlp block (eq. 3)
+#         self.mlp_block = MLPBlock(embedding_dim=embedding_dim,
+#                                   mlp_size=mlp_size,
+#                                   dropout=mlp_dropout)
+        
+#     def forward(self, x):
+#         x = self.msa_block(x) + x  # residual
+#         x = self.mlp_block(x) + x  # residual
+#         return x
+
+class TransformerEncoderBlock(nn.Module):
+
+    def __init__(self, 
+                 embedding_dim, 
+                 num_heads, 
+                 mlp_ratio=4., 
+                 qkv_bias=False, 
+                 qk_scale=None, 
+                 drop=0., 
+                 attn_drop=0.,
+                 drop_path=0., 
+                 norm_layer=nn.LayerNorm):
         super().__init__()
-        self.norm1 = norm_layer(dim)
+        self.norm1 = norm_layer(embedding_dim)
         self.attn = Attention(
-            dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+            embedding_dim, 
+            num_heads=num_heads, 
+            qkv_bias=qkv_bias, 
+            qk_scale=qk_scale, 
+            attn_drop=attn_drop, 
+            proj_drop=drop)
         # NOTE: drop path for stochastic depth, we shall see if this is better than dropout here
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
-        self.norm2 = norm_layer(dim)
-        mlp_hidden_dim = int(dim * mlp_ratio)
-        self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+        self.norm2 = norm_layer(embedding_dim)
+        mlp_hidden_dim = int(embedding_dim * mlp_ratio)
+        self.mlp = Mlp(in_features=embedding_dim, 
+                       hidden_features=mlp_hidden_dim, 
+                       drop=drop)
 
     def forward(self, x):
         x = x + self.drop_path(self.attn(self.norm1(x)))
@@ -205,7 +271,7 @@ class HybridEmbed(nn.Module):
 class PatchEmbed_overlap(nn.Module):
     """ Image to Patch Embedding with overlapping patches
     """
-    def __init__(self, img_size=224, patch_size=16, stride_size=20, in_chans=3, embed_dim=768):
+    def __init__(self, img_size=224, patch_size=16, stride_size=20, in_chans=3, embed_dim=HIDDEN_SIZE_VIT_BASE):
         super().__init__()
         img_size = to_2tuple(img_size)
         patch_size = to_2tuple(patch_size)
@@ -245,62 +311,71 @@ class PatchEmbed_overlap(nn.Module):
 class TransReID(nn.Module):
     """ Transformer-based Object Re-Identification
     """
-    def __init__(self, img_size=224, patch_size=16, stride_size=16, in_chans=3, num_classes=1000, embed_dim=768, depth=12,
-                 num_heads=12, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0., camera=0, view=0,
-                 drop_path_rate=0., hybrid_backbone=None, norm_layer=nn.LayerNorm, local_feature=False, sie_xishu =1.0):
+    def __init__(self, 
+                 transformer_config, 
+                 num_classes=1000, 
+                 num_transformer_layers=12,
+                 num_heads=12, 
+                 mlp_ratio=4., 
+                 qkv_bias=False, 
+                 qk_scale=None,
+                 hybrid_backbone=None, 
+                 norm_layer=nn.LayerNorm):
         super().__init__()
         self.num_classes = num_classes
-        self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
-        self.local_feature = local_feature
+        self.num_features = self.embed_dim = transformer_config.embedding_dimension  # num_features for consistency with other models
+        self.local_feature = transformer_config.local_feature
+
         if hybrid_backbone is not None:
             self.patch_embed = HybridEmbed(
-                hybrid_backbone, img_size=img_size, in_chans=in_chans, embed_dim=embed_dim)
+                hybrid_backbone, 
+                img_size=transformer_config.img_size, 
+                in_chans=transformer_config.input_channels, 
+                embed_dim=self.embed_dim)
         else:
             self.patch_embed = PatchEmbed_overlap(
-                img_size=img_size, patch_size=patch_size, stride_size=stride_size, in_chans=in_chans,
-                embed_dim=embed_dim)
+                img_size=transformer_config.img_size, 
+                patch_size=transformer_config.patch_size, 
+                stride_size=transformer_config.stride_size, 
+                in_chans=transformer_config.input_channels,
+                embed_dim=self.embed_dim)
 
         num_patches = self.patch_embed.num_patches
 
-        self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
-        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
-        self.cam_num = camera
-        self.view_num = view
-        self.sie_xishu = sie_xishu
-        # Initialize SIE Embedding
-        if camera > 1 and view > 1:
-            self.sie_embed = nn.Parameter(torch.zeros(camera * view, 1, embed_dim))
-            trunc_normal_(self.sie_embed, std=.02)
-            print('camera number is : {} and viewpoint number is : {}'.format(camera, view))
-            print('using SIE_Lambda is : {}'.format(sie_xishu))
-        elif camera > 1:
-            self.sie_embed = nn.Parameter(torch.zeros(camera, 1, embed_dim))
-            trunc_normal_(self.sie_embed, std=.02)
-            print('camera number is : {}'.format(camera))
-            print('using SIE_Lambda is : {}'.format(sie_xishu))
-        elif view > 1:
-            self.sie_embed = nn.Parameter(torch.zeros(view, 1, embed_dim))
-            trunc_normal_(self.sie_embed, std=.02)
-            print('viewpoint number is : {}'.format(view))
-            print('using SIE_Lambda is : {}'.format(sie_xishu))
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, self.embed_dim))
+        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, self.embed_dim))
+        
+        self.cam_num = transformer_config.camera
+        self.view_num = transformer_config.view
+        self.sie_xishu = transformer_config.sie_xishu
+        self.drop_rate = transformer_config.drop_out_rate
 
-        print('using drop_out rate is : {}'.format(drop_rate))
-        print('using attn_drop_out rate is : {}'.format(attn_drop_rate))
-        print('using drop_path rate is : {}'.format(drop_path_rate))
+        self.drop_path_rate = transformer_config.drop_path_rate
+        self.attn_drop_rate = transformer_config.attn_drop_rate
 
-        self.pos_drop = nn.Dropout(p=drop_rate)
-        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
+        self._initialize_sie_embedding()
+            
+        self._print_input_param()
+
+        self.pos_drop = nn.Dropout(p=self.drop_rate)
+        dpr = [x.item() for x in torch.linspace(0, self.drop_path_rate, num_transformer_layers)]  # stochastic depth decay rule
 
         self.blocks = nn.ModuleList([
-            Block(
-                dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
-                drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
-            for i in range(depth)])
+            TransformerEncoderBlock(embedding_dim=self.embed_dim, 
+                                    num_heads=num_heads, 
+                                    mlp_ratio=mlp_ratio, 
+                                    qkv_bias=qkv_bias, 
+                                    qk_scale=qk_scale,
+                                    drop=self.drop_rate, 
+                                    attn_drop=self.attn_drop_rate, 
+                                    drop_path=dpr[i], 
+                                    norm_layer=norm_layer)
+            for i in range(num_transformer_layers)])
 
-        self.norm = norm_layer(embed_dim)
+        self.norm = norm_layer(self.embed_dim)
 
         # Classifier head
-        self.fc = nn.Linear(embed_dim, num_classes) if num_classes > 0 else nn.Identity()
+        self.fc = nn.Linear(self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
         trunc_normal_(self.cls_token, std=.02)
         trunc_normal_(self.pos_embed, std=.02)
 
@@ -325,14 +400,45 @@ class TransReID(nn.Module):
     def reset_classifier(self, num_classes, global_pool=''):
         self.num_classes = num_classes
         self.fc = nn.Linear(self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
+    
+    def _initialize_sie_embedding(self):
+        """Initialize SIE Embedding
+        """
+        if self.cam_num > 1 and self.view_num > 1:
+            sie_embed_size = self.cam_num * self.view_num
+        elif self.cam_num > 1:
+            sie_embed_size = self.cam_num
+        elif self.view_num > 1:
+            sie_embed_size = self.view_num
+        else:
+            sie_embed_size = 0
+
+        if sie_embed_size > 0:
+            self.sie_embed = nn.Parameter(torch.zeros(sie_embed_size, 1, self.embed_dim))
+            trunc_normal_(self.sie_embed, std=.02)
+
+    def _print_input_param(self):
+        
+        print('camera number is : {}'.format(self.cam_num))
+        print('viewpoint number is : {}'.format(self.view_num))
+        print('using SIE_Lambda is : {}'.format(self.sie_xishu))
+
+        print('using drop_out rate is : {}'.format(self.drop_rate))
+        print('using attn_drop_out rate is : {}'.format(self.attn_drop_rate))
+        print('using drop_path rate is : {}'.format(self.drop_path_rate))
+
 
     def forward_features(self, x, camera_id, view_id):
-        B = x.shape[0]
+        batch_size = x.shape[0]
+        # create the patch embedding
         x = self.patch_embed(x)
 
-        cls_tokens = self.cls_token.expand(B, -1, -1)  # stole cls_tokens impl from Phil Wang, thanks
+        # create a cls token for each image in the batch
+        cls_tokens = self.cls_token.expand(batch_size, -1, -1)
+        # concatenate the cls token embedding and patch embedding
         x = torch.cat((cls_tokens, x), dim=1)
 
+        # add the positional embedding combined with Side Information Embedding
         if self.cam_num > 0 and self.view_num > 0:
             x = x + self.pos_embed + self.sie_xishu * self.sie_embed[camera_id * self.view_num + view_id]
         elif self.cam_num > 0:
@@ -342,8 +448,10 @@ class TransReID(nn.Module):
         else:
             x = x + self.pos_embed
 
+        # apply dropout to patch embedding
         x = self.pos_drop(x)
 
+        # pass position and patch embedding through the transformer encoder
         if self.local_feature:
             for blk in self.blocks[:-1]:
                 x = blk(x)
@@ -404,28 +512,36 @@ def resize_pos_embed(posemb, posemb_new, hight, width):
     return posemb
 
 
-def vit_base_patch16_224_TransReID(img_size=(256, 128), stride_size=16, drop_rate=0.0, attn_drop_rate=0.0, drop_path_rate=0.1, camera=0, view=0,local_feature=False,sie_xishu=1.5, **kwargs):
-    model = TransReID(
-        img_size=img_size, patch_size=16, stride_size=stride_size, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,\
-        camera=camera, view=view, drop_path_rate=drop_path_rate, drop_rate=drop_rate, attn_drop_rate=attn_drop_rate,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),  sie_xishu=sie_xishu, local_feature=local_feature, **kwargs)
+def vit_base_patch16_224_TransReID(trans_config):
+    
+    model = TransReID(trans_config,
+                      num_transformer_layers=12, 
+                      num_heads=12, 
+                      mlp_ratio=4, 
+                      qkv_bias=True,
+                      norm_layer=partial(nn.LayerNorm, eps=1e-6))
 
     return model
 
-def vit_small_patch16_224_TransReID(img_size=(256, 128), stride_size=16, drop_rate=0., attn_drop_rate=0.,drop_path_rate=0.1, camera=0, view=0, local_feature=False, sie_xishu=1.5, **kwargs):
-    kwargs.setdefault('qk_scale', 768 ** -0.5)
-    model = TransReID(
-        img_size=img_size, patch_size=16, stride_size=stride_size, embed_dim=768, depth=8, num_heads=8,  mlp_ratio=3., qkv_bias=False, drop_path_rate = drop_path_rate,\
-        camera=camera, view=view,  drop_rate=drop_rate, attn_drop_rate=attn_drop_rate,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),  sie_xishu=sie_xishu, local_feature=local_feature, **kwargs)
+def vit_small_patch16_224_TransReID(trans_config):
+    
+    model = TransReID(trans_config,
+                      num_transformer_layers=8, 
+                      num_heads=8, 
+                      mlp_ratio=3., 
+                      qkv_bias=False, 
+                      norm_layer=partial(nn.LayerNorm, eps=1e-6))
 
     return model
 
-def deit_small_patch16_224_TransReID(img_size=(256, 128), stride_size=16, drop_path_rate=0.1, drop_rate=0.0, attn_drop_rate=0.0, camera=0, view=0, local_feature=False, sie_xishu=1.5, **kwargs):
-    model = TransReID(
-        img_size=img_size, patch_size=16, stride_size=stride_size, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True,
-        drop_path_rate=drop_path_rate, drop_rate=drop_rate, attn_drop_rate=attn_drop_rate, camera=camera, view=view, sie_xishu=sie_xishu, local_feature=local_feature,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
+def deit_small_patch16_224_TransReID(trans_config):
+    
+    model = TransReID(trans_config,
+                      num_transformer_layers=12, 
+                      num_heads=6, 
+                      mlp_ratio=4, 
+                      qkv_bias=True,
+                      norm_layer=partial(nn.LayerNorm, eps=1e-6))
 
     return model
 

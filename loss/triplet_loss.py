@@ -12,6 +12,17 @@ def normalize(x, axis=-1):
     x = 1. * x / (torch.norm(x, 2, axis, keepdim=True).expand_as(x) + 1e-12)
     return x
 
+def euclidean_dist_(x, y):
+    """
+    Args:
+      x: pytorch Tensor, with shape [m, d]
+      y: pytorch Tensor, with shape [n, d]
+    Returns:
+      dist: pytorch Tensor, with shape [m, n]
+    """
+    # m, n = x.size(0), y.size(0)
+    dist = torch.cdist(x, y, p=2)
+    return dist
 
 def euclidean_dist(x, y):
     """
@@ -25,11 +36,20 @@ def euclidean_dist(x, y):
     xx = torch.pow(x, 2).sum(1, keepdim=True).expand(m, n)
     yy = torch.pow(y, 2).sum(1, keepdim=True).expand(n, m).t()
     dist = xx + yy
-    dist = dist - 2 * torch.matmul(x, y.t())
+    dist.addmm_(x, y.t(), beta=1, alpha=-2)
+    # dist = dist - 2 * torch.matmul(x, y.t())
     # dist.addmm_(1, -2, x, y.t())
     dist = dist.clamp(min=1e-12).sqrt()  # for numerical stability
     return dist
 
+# def euclidean_distance(qf, gf):
+#     m = qf.shape[0]
+#     n = gf.shape[0]
+#     dist_mat = torch.pow(qf, 2).sum(dim=1, keepdim=True).expand(m, n) + \
+#                torch.pow(gf, 2).sum(dim=1, keepdim=True).expand(n, m).t()
+#     dist_mat.addmm_(qf, gf.t(), beta=1, alpha=-2)
+#     # dist_mat.addmm_(1, -2, qf, gf.t())
+#     return dist_mat.cpu().numpy()
 
 def cosine_dist(x, y):
     """
@@ -135,3 +155,56 @@ class TripletLoss(object):
         return loss, dist_ap, dist_an
 
 
+class TripletLossMatcher(nn.Module):
+    def __init__(self, margin=16):
+        """
+        Inputs:
+            margin: margin parameter for the triplet loss
+        """
+        super(TripletLossMatcher, self).__init__()
+        self.matcher = None
+        # self.margin = margin
+        self.ranking_loss = nn.MarginRankingLoss(margin=margin, reduction='none')
+
+    # @property
+    # def matcher(self):
+    #     return self._matcher
+    
+    # @matcher.setter
+    # def matcher(self, matcher):
+    #     self._matcher = matcher
+
+    def reset_running_stats(self):
+        self.matcher.reset_running_stats()
+
+    def reset_parameters(self):
+        self.matcher.reset_parameters()
+
+    def _check_input_dim(self, input):
+        if input.dim() != 4:
+            raise ValueError('expected 4D input (got {}D input)'.format(input.dim()))
+
+    def forward(self, feature, target):
+        self._check_input_dim(feature)
+        # self.matcher.make_kernel(feature)
+
+        score = self.matcher(feature, feature)  # [b, b]
+
+        target1 = target.unsqueeze(1)
+        mask = (target1 == target1.t())
+        pair_labels = mask.float()
+
+        min_pos = torch.min(score * pair_labels + 
+                (1 - pair_labels + torch.eye(score.size(0), device=score.device)) * 1e15, dim=1)[0]
+        max_neg = torch.max(score * (1 - pair_labels) - pair_labels * 1e15, dim=1)[0]
+
+        # Compute ranking hinge loss
+        loss = self.ranking_loss(min_pos, max_neg, torch.ones_like(target))
+
+        with torch.no_grad():
+            acc = (min_pos >= max_neg).float()
+
+        loss = loss.mean()
+        acc = acc.mean()
+
+        return loss, acc

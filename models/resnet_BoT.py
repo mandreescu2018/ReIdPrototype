@@ -1,7 +1,3 @@
-"""
-Rethinking the Distribution Gap of Person Re-identification with Camera-based Batch Normalization
-
-"""
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

@@ -36,7 +36,7 @@ class ProcessorBase:
         self.composite_logger.info('Start training')
 
     def train_step(self):
-        self.model.train()
+        pass
     
     def model_evaluation(self):
         self.model.eval()

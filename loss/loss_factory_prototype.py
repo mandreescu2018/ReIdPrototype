@@ -1,5 +1,5 @@
 import torch.nn as nn
-from .triplet_loss import TripletLoss
+from .triplet_loss import TripletLoss, TripletLossMatcher
 from .softmax_loss import CrossEntropyLabelSmooth
 from .center_loss import CenterLoss
 
@@ -55,6 +55,23 @@ class TripletLossWrap(BaseLoss):
             loss = self.loss(feat, target)[0]
         return loss * self.weight
 
+class TripletLossMatcherWrap(BaseLoss):
+    def __init__(self, cfg) -> None:
+        super().__init__(cfg)        
+    
+    @property
+    def loss(self):
+        if self._loss == None:
+            self._loss = TripletLossMatcher(self.margin)
+        return self._loss
+
+    def compute(self, outputs, target):
+        if isinstance(outputs, tuple):
+            score = outputs[self.output_index]
+        else:
+            score = outputs
+        return self.loss(score, target)
+
 class CrossEntropyLossWrap(BaseLoss):
     def __init__(self, cfg, num_classes) -> None:
         super().__init__(cfg)
@@ -102,6 +119,8 @@ class LossFactory:
             return TripletLossWrap(loss_conf)
         elif loss_conf["type"] == "center":
             return CenterLossWrap(loss_conf, num_classes, feature_dim)
+        elif loss_conf["type"] == "triplet_matcher":
+            return TripletLossMatcherWrap(loss_conf)
         else:
             raise ValueError(f"Unsupported loss type: {loss_conf['type']}")
     
@@ -109,7 +128,7 @@ class LossFactory:
 class LossComposer:
     def __init__(self, cfg):
         """
-        Initialize the LossComposer with a list of loss configurations.
+        Initialize the LossComposer with configuration object.
         
         Args:
             cfg : Configuration yacs object.
@@ -127,7 +146,8 @@ class LossComposer:
             loss_fn = LossFactory.create_loss(loss_conf, num_classes, feature_dim)
             if loss_conf["type"] == "center":
                 self.set_center_criterion(loss_fn)
-            self.loss_functions.append(loss_fn)            
+            else:
+                self.loss_functions.append(loss_fn)            
 
     @property
     def center_criterion(self):

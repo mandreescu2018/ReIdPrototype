@@ -25,16 +25,11 @@ _C.MODEL.NAME = 'resnet50'
 _C.MODEL.LAST_STRIDE = 1
 # Path to pretrained model of backbone
 _C.MODEL.PRETRAIN_PATH = ''
-
 # Use ImageNet pretrained model to initialize backbone or use self trained model to initialize the whole model
 # Options: 'imagenet' , 'self' , 'finetune'
 _C.MODEL.PRETRAIN_CHOICE = 'imagenet'
-
 # If train with BNNeck, options: 'bnneck' or 'no'
 _C.MODEL.NECK = 'bnneck'
-# If train loss include center loss, options: 'yes' or 'no'. Loss with center loss has different optimizer configuration
-_C.MODEL.IF_WITH_CENTER = 'no'
-
 # If train with multi-gpu ddp mode, options: 'True', 'False'
 _C.MODEL.DIST_TRAIN = False
 # If train with soft triplet loss, options: 'True', 'False'
@@ -42,6 +37,9 @@ _C.MODEL.NO_MARGIN = False
 
 # If train with arcface loss, options: 'True', 'False'
 _C.MODEL.COS_LAYER = False
+# depth of the model (added for resnet dynamic creation)
+_C.MODEL.DEPTH = 50
+
 
 # Transformer setting
 _C.MODEL.DROP_PATH = 0.1
@@ -57,8 +55,8 @@ _C.MODEL.SHUFFLE_GROUP = 2
 _C.MODEL.DEVIDE_LENGTH = 5
 _C.MODEL.RE_ARRANGE = True
 
-# SIE Parameter
-_C.MODEL.SIE_COE = 3.0
+# Side Information Embedding Parameter
+_C.MODEL.SIE_COEFFICIENT = 3.0
 _C.MODEL.SIE_CAMERA = False
 _C.MODEL.SIE_VIEW = False
 

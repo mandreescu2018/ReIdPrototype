@@ -1,8 +1,4 @@
 # encoding: utf-8
-"""
-@author:  liaoxingyu
-@contact: liaoxingyu2@jd.com
-"""
 
 import glob
 import re
@@ -26,10 +22,9 @@ class OCC_DukeMTMCreID(BaseDataset):
     # cameras: 8
     """
 
-    def __init__(self, cfg, verbose=True, pid_begin=0, **kwargs):
+    def __init__(self, cfg, verbose=True, pid_begin=0):
         super(OCC_DukeMTMCreID, self).__init__()
         self.dataset_dir = osp.join(cfg.DATASETS.ROOT_DIR, cfg.DATASETS.DIR)
-        # self.dataset_url = 'http://vision.cs.duke.edu/DukeMTMC/data/misc/DukeMTMC-reID.zip'
         self.train_dir = osp.join(self.dataset_dir, 'bounding_box_train')
         self.query_dir = osp.join(self.dataset_dir, 'query')
         self.gallery_dir = osp.join(self.dataset_dir, 'bounding_box_test')

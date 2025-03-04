@@ -13,6 +13,7 @@ from datasets import make_dataloader
 
 if __name__ == '__main__':
 
+    # Parse arguments
     parser = argparse.ArgumentParser(description="ReID Prototype Training")
     parser.add_argument(
         "--config_file", default="configurations/Trans_ReID/Market/vit_base.yml", help="path to config file", type=str
