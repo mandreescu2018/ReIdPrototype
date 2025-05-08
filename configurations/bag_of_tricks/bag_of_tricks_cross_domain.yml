@@ -1,0 +1,52 @@
+MODEL:
+  PRETRAIN_CHOICE: 'imagenet'
+  PRETRAIN_PATH: './weights_pretrained/resnet50-19c8e357.pth'
+  NECK: 'bnneck'
+  NAME: 'resnet50'
+  
+SOLVER:
+  IMS_PER_BATCH: 64
+  FEATURE_DIMENSION: 2048
+  
+PROCESSOR: 
+  TARGET_KEY: 1 # position of person id in the input values
+
+INPUT:
+  SIZE_TRAIN: [256, 128]
+  SIZE_TEST: [256, 128]
+  PIXEL_MEAN: [0.485, 0.456, 0.406]
+  PIXEL_STD: [0.229, 0.224, 0.225]
+  PADDING: 10
+  TRAIN_KEYS: [0]
+  EVAL_KEYS: [0]
+
+DATALOADER:
+  SAMPLER: 'softmax_triplet'
+  NUM_INSTANCE: 4
+  NUM_WORKERS: 8
+
+DATASETS:
+  NAMES: market1501
+  DIR: 'market1501'
+  # NAMES: dukemtmc
+  # DIR: 'DukeMTMC-reID'
+  # NAMES: msmt17
+  # DIR: 'MSMT17_V1'
+  
+
+TEST:
+  EVAL: True
+  IMS_PER_BATCH: 256
+  RE_RANKING: False
+  WEIGHT: './logs/bag_of_tricks_msmt17_all_tricks/resnet50_resume_120.pth'
+  # NECK_FEAT: 'before'
+  NECK_FEAT: 'after'
+  FEAT_NORM: 'yes'
+
+LOGGING:
+  WANDB_USE: False
+  WANDB_PROJECT: 'resnet_market'
+  WANDB_NAME: 'market_resnet_base'
+OUTPUT_DIR: './logs/bag_of_tricks_market_all_tricks'
+EXPERIMENT_NAME: 'b_o_t_market'
+

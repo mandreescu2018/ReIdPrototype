@@ -55,8 +55,8 @@ DATALOADER:
   NUM_WORKERS: 8
 
 DATASETS:
-  NAMES: ('occ_duke')
-  DIR: 'occluded_duke'
+  NAMES: msmt17
+  DIR: 'MSMT17_V1'
 
 TEST:
   EVAL: True

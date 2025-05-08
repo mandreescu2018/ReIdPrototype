@@ -146,8 +146,9 @@ class LossComposer:
             loss_fn = LossFactory.create_loss(loss_conf, num_classes, feature_dim)
             if loss_conf["type"] == "center":
                 self.set_center_criterion(loss_fn)
-            else:
-                self.loss_functions.append(loss_fn)            
+            self.loss_functions.append(loss_fn)            
+            # else:
+            #     self.loss_functions.append(loss_fn)            
 
     @property
     def center_criterion(self):

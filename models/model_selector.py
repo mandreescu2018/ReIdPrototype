@@ -1,6 +1,6 @@
 import torch
 from .vit_model import build_transformer, build_transformer_local
-from .mobilenet_v2 import MobileNetV2
+from .backbones.mobilenet_v2 import MobileNetV2
 from .resnet_CBN import ResNetBuilder
 from .simple_model import SimpleReIDModel
 from .resnet_BoT import BagOfTricksBuilder

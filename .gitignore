@@ -26,3 +26,5 @@ test_graph.py
 test_cases/*
 test_cases/test_dataset.py
 test_cases/test_losses.py
+configurations/hacnn/hacnn_cross.yml
+configurations/bag_of_tricks/Market/bag_of_tricks_all_tricks.yml
