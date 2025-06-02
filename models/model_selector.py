@@ -1,5 +1,6 @@
 import torch
 from .vit_model import build_transformer, build_transformer_local
+from .vit_model_vanilla import build_transformer_vanilla
 from .backbones.mobilenet_v2 import MobileNetV2
 from .resnet_CBN import ResNetBuilder
 from .simple_model import SimpleReIDModel
@@ -10,6 +11,8 @@ from utils.device_manager import DeviceManager
 
 model_factory = {
     'vit_transformer': build_transformer,
+    'vit_transformer_vanilla': build_transformer_vanilla,
+    'vit_transformer_pytorch': build_transformer_vanilla,
     'vit_transformer_jpm': build_transformer_local,
     'mobilenet_v2': MobileNetV2,
     'resnet50': BagOfTricksBuilder,

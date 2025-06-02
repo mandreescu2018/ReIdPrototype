@@ -2,16 +2,10 @@ import torch
 import torch.nn as nn
 import copy
 from config.constants import *
+from config.vit_config import TransformerConfig
 from loss.metric_learning import Arcface, Cosface, AMSoftmax, CircleLoss
 from utils.weight_utils import weights_init_classifier, weights_init_kaiming
-from .backbones.vit_pytorch import vit_base_patch16_224_TransReID, vit_small_patch16_224_TransReID, deit_small_patch16_224_TransReID
-
-factory_T_type = {
-    'vit_base_patch16_224_TransReID': vit_base_patch16_224_TransReID,
-    'deit_base_patch16_224_TransReID': vit_base_patch16_224_TransReID,
-    'vit_small_patch16_224_TransReID': vit_small_patch16_224_TransReID,
-    'deit_small_patch16_224_TransReID': deit_small_patch16_224_TransReID
-}
+from .backbones.vit_pytorch import TransReID
 
 id_loss_factory = {
     'arcface': Arcface,
@@ -39,108 +33,71 @@ def shuffle_unit(features, shift, group, begin=1):
 
     return x
 
-
-def set_classifier(cfg):
-    num_classes = cfg.DATASETS.NUMBER_OF_CLASSES
-    in_planes = HIDDEN_SIZE_VIT_BASE
-    classifier = None
-    
-    if cfg.LOSS.ID_LOSS_TYPE in ('arcface', 'cosface', 'amsoftmax', 'circle'):
-        classifier = id_loss_factory[cfg.LOSS.ID_LOSS_TYPE](in_planes, num_classes, s=cfg.SOLVER.COSINE_SCALE, m=cfg.SOLVER.COSINE_MARGIN)        
-    return classifier
-
-class TransformerConfig:
+class vit_builder_base(nn.Module):
     def __init__(self, cfg):
+        super().__init__()
         self.config = cfg
-        self._img_size = None
-        self._embedding_dimension = HIDDEN_SIZE_VIT_BASE
-        
-    @property
-    def camera(self):
-        return self.config.DATASETS.NUMBER_OF_CAMERAS if self.config.MODEL.SIE_CAMERA else 0
-    
-    @property
-    def view(self):
-        return self.config.DATASETS.NUMBER_OF_TRACKS if self.config.MODEL.SIE_VIEW else 0
-    
-    @property
-    def img_size(self):
-        if self._img_size is None:
-            self._img_size = self.config.INPUT.SIZE_TRAIN
-        return self._img_size
-    
-    @property
-    def sie_xishu(self):
-        return self.config.MODEL.SIE_COEFFICIENT
-    
-    @property
-    def stride_size(self):
-        return self.config.MODEL.STRIDE_SIZE
-    
-    @property
-    def drop_path_rate(self):
-        return self.config.MODEL.DROP_PATH
-    
-    @property
-    def patch_size(self):
-        return VIT_PATCH_SIZE
-    
-    @property
-    def input_channels(self):
-        return DEFAULT_INPUT_CHANNELS
-    
-    @property
-    def embedding_dimension(self):
-        if self.config.MODEL.TRANSFORMER_TYPE == 'deit_small_patch16_224_TransReID':
-            self._embedding_dimension = 384
-        return self._embedding_dimension
-    
-    @property
-    def drop_out_rate(self):
-        return self.config.MODEL.DROP_OUT
-    
-    @property
-    def attn_drop_rate(self):
-        return self.config.MODEL.ATT_DROP_RATE
-    
-    @property
-    def local_feature(self):
-        if self.config.MODEL.NAME == "vit_transformer_jpm":
-            return True
-        return False
-    
-
-class build_transformer(nn.Module):
-    def __init__(self, cfg):
-        super(build_transformer, self).__init__()
-        self.cos_layer = cfg.MODEL.COS_LAYER
         self.neck = cfg.MODEL.NECK
         self.neck_feat = cfg.TEST.NECK_FEAT
 
-        transformer_config = TransformerConfig(cfg)
+        self.transformer_config = TransformerConfig(cfg)
+        self.in_planes = self.transformer_config.embedding_dimension
+        self.num_classes = cfg.DATASETS.NUMBER_OF_CLASSES
 
-        self.in_planes = transformer_config.embedding_dimension
+        print(f'using Transformer_type: {cfg.MODEL.TRANSFORMER_TYPE} as a backbone'.format())
 
-        print(f'using Transformer_type: {cfg.MODEL.TRANSFORMER_TYPE} as a backbone')
+        self.base = TransReID(self.transformer_config)
 
-        self.base = factory_T_type[cfg.MODEL.TRANSFORMER_TYPE](transformer_config)
-        
         if cfg.MODEL.PRETRAIN_CHOICE == 'imagenet':
             self.base.load_param(cfg.MODEL.PRETRAIN_PATH)
             print(f'Loading pretrained ImageNet model......from {cfg.MODEL.PRETRAIN_PATH}')
+    
+    def _init_bottleneck_layers(self, num_layers=5):
+        """ Initialize bottleneck layers for the model. """
+        self.bottlenecks = []
+        for _ in range(num_layers):
+            bottleneck = nn.BatchNorm1d(self.in_planes)
+            bottleneck.bias.requires_grad_(False)
+            bottleneck.apply(weights_init_kaiming)
+            self.bottlenecks.append(bottleneck)
+            
+        if num_layers == 1:
+            self.bottleneck = self.bottlenecks[0]
+        else:
+            self.bottleneck, self.bottleneck_1, self.bottleneck_2, self.bottleneck_3, self.bottleneck_4 = self.bottlenecks
+    
+    def _init_classifier_layers(self, num_classifiers=5):
+        """ Initialize classifier layers for the model. """
+        in_planes = self.transformer_config.embedding_dimension
+        
+        if self.config.LOSS.ID_LOSS_TYPE in ('arcface', 'cosface', 'amsoftmax', 'circle'):
+            self.classifier = id_loss_factory[self.config.LOSS.ID_LOSS_TYPE](in_planes, 
+                                                                             self.config.DATASETS.NUMBER_OF_CLASSES, 
+                                                                             s=self.config.SOLVER.COSINE_SCALE, 
+                                                                             m=self.config.SOLVER.COSINE_MARGIN)        
+        else:
+            # Initialize multiple linear classifiers for local features
+            if num_classifiers == 1:
+                self.classifier = nn.Linear(in_planes, self.num_classes, bias=False)
+                self.classifier.apply(weights_init_classifier)
+            else:
+                classifiers = []
+                for _ in range(num_classifiers):
+                    classifier = nn.Linear(self.in_planes, self.num_classes, bias=False)
+                    classifier.apply(weights_init_classifier)
+                    classifiers.append(classifier)
+                self.classifier, self.classifier_1, self.classifier_2, self.classifier_3, self.classifier_4 = classifiers
 
-        self.gap = nn.AdaptiveAvgPool2d(1)
 
-        self.classifier = set_classifier(cfg)
-        if self.classifier is None:
-            self.classifier = nn.Linear(self.in_planes, cfg.DATASETS.NUMBER_OF_CLASSES, bias=False)
-            self.classifier.apply(weights_init_classifier)
+class build_transformer(vit_builder_base):
+    def __init__(self, cfg):
+        super(build_transformer, self).__init__(cfg)
+        # self.gap = nn.AdaptiveAvgPool2d(1) - unnecessary ?
         
         self.ID_LOSS_TYPE = cfg.LOSS.ID_LOSS_TYPE
-        
-        self.bottleneck = nn.BatchNorm1d(self.in_planes)
-        self.bottleneck.bias.requires_grad_(False)
-        self.bottleneck.apply(weights_init_kaiming)
+
+        self._init_classifier_layers(num_classifiers=1)  # Initialize classifier layers
+        self._init_bottleneck_layers(num_layers=1)  # Initialize bottleneck layers
 
     def forward(self, x, label=0, cam_label= 0, view_label=0):
         global_feat = self.base(x, cam_label=cam_label, view_label=view_label)
@@ -163,24 +120,9 @@ class build_transformer(nn.Module):
                 return global_feat
 
 
-class build_transformer_local(nn.Module):
+class build_transformer_local(vit_builder_base):
     def __init__(self, cfg):
-        super(build_transformer_local, self).__init__()
-        self.cos_layer = cfg.MODEL.COS_LAYER
-        self.neck = cfg.MODEL.NECK
-        self.neck_feat = cfg.TEST.NECK_FEAT
-
-        transformer_config = TransformerConfig(cfg)
-
-        self.in_planes = transformer_config.embedding_dimension
-
-        print(f'using Transformer_type: {cfg.MODEL.TRANSFORMER_TYPE} as a backbone'.format())
-
-        self.base = factory_T_type[cfg.MODEL.TRANSFORMER_TYPE](transformer_config)
-
-        if cfg.MODEL.PRETRAIN_CHOICE == 'imagenet':
-            self.base.load_param(cfg.MODEL.PRETRAIN_PATH)
-            print(f'Loading pretrained ImageNet model......from {cfg.MODEL.PRETRAIN_PATH}')
+        super(build_transformer_local, self).__init__(cfg=cfg)
 
         block = self.base.blocks[-1]
         layer_norm = self.base.norm
@@ -193,36 +135,10 @@ class build_transformer_local(nn.Module):
             copy.deepcopy(layer_norm)
         )
 
-        self.num_classes = cfg.DATASETS.NUMBER_OF_CLASSES
         self.ID_LOSS_TYPE = cfg.LOSS.ID_LOSS_TYPE
-        self.classifier = set_classifier(cfg)
-        if self.classifier is None:
-            self.classifier = nn.Linear(self.in_planes, self.num_classes, bias=False)
-            self.classifier.apply(weights_init_classifier)
-            self.classifier_1 = nn.Linear(self.in_planes, self.num_classes, bias=False)
-            self.classifier_1.apply(weights_init_classifier)
-            self.classifier_2 = nn.Linear(self.in_planes, self.num_classes, bias=False)
-            self.classifier_2.apply(weights_init_classifier)
-            self.classifier_3 = nn.Linear(self.in_planes, self.num_classes, bias=False)
-            self.classifier_3.apply(weights_init_classifier)
-            self.classifier_4 = nn.Linear(self.in_planes, self.num_classes, bias=False)
-            self.classifier_4.apply(weights_init_classifier)        
-
-        self.bottleneck = nn.BatchNorm1d(self.in_planes)
-        self.bottleneck.bias.requires_grad_(False)
-        self.bottleneck.apply(weights_init_kaiming)
-        self.bottleneck_1 = nn.BatchNorm1d(self.in_planes)
-        self.bottleneck_1.bias.requires_grad_(False)
-        self.bottleneck_1.apply(weights_init_kaiming)
-        self.bottleneck_2 = nn.BatchNorm1d(self.in_planes)
-        self.bottleneck_2.bias.requires_grad_(False)
-        self.bottleneck_2.apply(weights_init_kaiming)
-        self.bottleneck_3 = nn.BatchNorm1d(self.in_planes)
-        self.bottleneck_3.bias.requires_grad_(False)
-        self.bottleneck_3.apply(weights_init_kaiming)
-        self.bottleneck_4 = nn.BatchNorm1d(self.in_planes)
-        self.bottleneck_4.bias.requires_grad_(False)
-        self.bottleneck_4.apply(weights_init_kaiming)
+        
+        self._init_classifier_layers()            
+        self._init_bottleneck_layers()
 
         self.shuffle_groups = cfg.MODEL.SHUFFLE_GROUP
         print(f'using shuffle_groups size:{self.shuffle_groups}')
@@ -249,22 +165,22 @@ class build_transformer_local(nn.Module):
             x = shuffle_unit(features, self.shift_num, self.shuffle_groups)
         else:
             x = features[:, 1:]
-        # lf_1
+        # Processing local feature segment 1 for JPM branch
         b1_local_feat = x[:, :patch_length]
         b1_local_feat = self.b2(torch.cat((token, b1_local_feat), dim=1))
         local_feat_1 = b1_local_feat[:, 0]
 
-        # lf_2
+        # Processing local feature segment 2 for JPM branch
         b2_local_feat = x[:, patch_length:patch_length*2]
         b2_local_feat = self.b2(torch.cat((token, b2_local_feat), dim=1))
         local_feat_2 = b2_local_feat[:, 0]
 
-        # lf_3
+        # Processing local feature segment 3 for JPM branch
         b3_local_feat = x[:, patch_length*2:patch_length*3]
         b3_local_feat = self.b2(torch.cat((token, b3_local_feat), dim=1))
         local_feat_3 = b3_local_feat[:, 0]
 
-        # lf_4
+        # Processing local feature segment 4 for JPM branch
         b4_local_feat = x[:, patch_length*3:patch_length*4]
         b4_local_feat = self.b2(torch.cat((token, b4_local_feat), dim=1))
         local_feat_4 = b4_local_feat[:, 0]

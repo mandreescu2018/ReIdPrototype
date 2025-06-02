@@ -1,10 +1,11 @@
 MODEL:
-  PRETRAIN_CHOICE: 'resume'
-  # PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
-  PRETRAIN_PATH: './logs/market_vit_base_jpm/vit_transformer_jpm_resume_110.pth'
+  PRETRAIN_CHOICE: 'imagenet'
+  PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
+  # PRETRAIN_PATH: './logs/vit_base_market_jpm_stride12/vit_transformer_jpm_resume_80.pth'
   NAME: 'vit_transformer_jpm'
-  TRANSFORMER_TYPE: 'vit_base_patch16_224_TransReID'
-  STRIDE_SIZE: [16, 16] # equal to patch size
+  STRIDE_SIZE: [12, 12] # equal to patch size
+  TRANSFORMER:
+    TYPE: 'vit_base_patch16_224_TransReID'
 
 SOLVER:
   OPTIMIZER_NAME: 'SGD'
@@ -61,8 +62,7 @@ TEST:
   EVAL: True
   IMS_PER_BATCH: 256
   RE_RANKING: False
-  # WEIGHT: './logs/0321_market_vit_base_jpm/transformer_resume_120.pth'
-  WEIGHT: './logs/market_vit_base_jpm/vit_transformer_jpm_model_full.pth'
+  WEIGHT: './logs/0321_market_vit_base_jpm/transformer_resume_120.pth'
   NECK_FEAT: 'before'
   FEAT_NORM: 'yes'
 
@@ -71,5 +71,5 @@ LOGGING:
   WANDB_PROJECT: 'transformer_reid'
   WANDB_NAME: '0321_market_vit_base_jpm'
 
-OUTPUT_DIR: './logs/market_vit_base_jpm'
-EXPERIMENT_NAME: 'vit_base_market_jpm'
+OUTPUT_DIR: './logs/vit_base_market_jpm_stride12'
+EXPERIMENT_NAME: 'vit_base_market_jpm_stride12'
