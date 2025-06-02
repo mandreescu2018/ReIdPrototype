@@ -1,3 +1,4 @@
+import os
 import torch
 from utils.device_manager import DeviceManager
 from .metrics_values import MetricsLiveValues
@@ -99,7 +100,7 @@ class ProcessorBase:
             self.composite_logger.info(status_msg)
     
     # SAVE MODEL
-    def save_model_for_resume(self,
+    def save_model(self,
                           path: str):
         torch.save({
                 'epoch': self.live_values.current_epoch,
@@ -109,4 +110,9 @@ class ProcessorBase:
                 'optimizer_center_state_dict': self.optimizer_center.state_dict() if self.optimizer_center is not None else None,
                 'scheduler_state_dict': self.scheduler.state_dict(),
                 }, path)
+        
+        if self.live_values.current_epoch == self.max_epochs:
+            torch.save(self.model, os.path.join(self.config.OUTPUT_DIR, self.config.MODEL.NAME + '_model_full.pth'))
+            sscripted_model = torch.jit.script(self.model)
+            sscripted_model.save(os.path.join(self.config.OUTPUT_DIR, self.config.MODEL.NAME + '_scritped_model_full.pt'))
     

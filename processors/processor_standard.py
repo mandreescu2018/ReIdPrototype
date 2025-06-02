@@ -25,7 +25,8 @@ class ProcessorStandard(ProcessorBase):
                 if epoch % self.config.SOLVER.EVAL_PERIOD == 0 or epoch == 1:
                     self.validation_step()
                 if epoch % self.config.SOLVER.CHECKPOINT_PERIOD == 0:
-                    self.save_model_for_resume(os.path.join(self.config.OUTPUT_DIR, self.config.MODEL.NAME + '_resume_{}.pth'.format(epoch))) 
+                    self.save_model(os.path.join(self.config.OUTPUT_DIR, self.config.MODEL.NAME + '_resume_{}.pth'.format(epoch))) 
+                
 
     def train_step(self):
         self.model.train()

@@ -3,7 +3,9 @@ from .processor_qaconv import ProcessorQaconv
 
 __factory = {
     'vit_transformer': ProcessorStandard,
+    'vit_transformer_vanilla': ProcessorStandard,
     'vit_transformer_jpm': ProcessorStandard,
+    'vit_transformer_pytorch': ProcessorStandard,
     'mobilenet_v2': ProcessorStandard,
     'resnet50': ProcessorStandard,
     'simple_resnet50': ProcessorStandard,
