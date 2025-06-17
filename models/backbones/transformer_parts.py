@@ -6,6 +6,119 @@ from utils.weight_utils import init_patch_embed_weights
 
 to_2tuple = nn.modules.utils._ntuple(2)
 
+class DropPath(nn.Module):
+    """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks).
+    """
+    def __init__(self, drop_prob=None):
+        super(DropPath, self).__init__()
+        self.drop_prob = drop_prob
+
+    def drop_path(self, x):
+        """Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks).
+
+        This is the same as the DropConnect impl I created for EfficientNet, etc networks, however,
+        the original name is misleading as 'Drop Connect' is a different form of dropout in a separate paper...
+        See discussion: https://github.com/tensorflow/tpu/issues/494#issuecomment-532968956 ... I've opted for
+        changing the layer and argument names to 'drop path' rather than mix DropConnect as a layer name and use
+        'survival rate' as the argument.
+
+        """
+        if self.drop_prob == 0. or not self.training:
+            return x
+        keep_prob = 1 - self.drop_prob
+        shape = (x.shape[0],) + (1,) * (x.ndim - 1)  # work with diff dim tensors, not just 2D ConvNets
+        random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
+        random_tensor.floor_()  # binarize
+        output = x.div(keep_prob) * random_tensor
+        return output
+    
+    def forward(self, x):
+        return self.drop_path(x)
+
+
+class part_Attention(nn.Module):
+    def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
+        super().__init__()
+        self.num_heads = num_heads
+        head_dim = dim // num_heads
+        # NOTE scale factor was wrong in my original version, can set manually to be compat with prev weights
+        self.scale = qk_scale or head_dim ** -0.5
+
+        self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
+        self.attn_drop = nn.Dropout(attn_drop)
+        self.proj = nn.Linear(dim, dim)
+        self.proj_drop = nn.Dropout(proj_drop)
+
+    def forward(self, x, mask=None):
+        B, N, C = x.shape
+        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+        q, k, v = qkv[0], qkv[1], qkv[2]   # make torchscript happy (cannot use tensor as tuple)
+        # add mask to q k v
+        mask = mask.to(q.device.type)
+
+        attn = (q @ k.transpose(-2, -1)) * self.scale
+        if mask is not None:
+            attn = attn.masked_fill(~mask.bool(), torch.tensor(-1e3, dtype=torch.float16)) # mask
+        attn = attn.softmax(dim=-1)
+        attn = torch.mul(attn, mask) ###
+        attn = self.attn_drop(attn)
+
+        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+        x = self.proj(x)
+        x = self.proj_drop(x)
+        return x
+
+class Attention(nn.Module):
+    """ Multi-Head Attention module with support for qkv_bias and qk_scale
+    Args:
+        dim (int): Number of input channels.
+        num_heads (int): Number of attention heads. specifies how many attention heads to use. 
+        The input dimension (dim) is split across these heads
+        qkv_bias (bool, optional): If True, add a learnable bias to query, key, value. Default: False
+        qk_scale (float | None, optional): Override default qk scale of head_dim ** -0.5 if set.
+        attn_drop (float, optional): Dropout ratio for attention weight. Default: 0.0
+        proj_drop (float, optional): Dropout ratio after projection. Default: 0.0
+    """
+    def __init__(self, transformer_config, qk_scale=None):
+        super().__init__()
+        dim = transformer_config.hidden_size
+        self.num_heads = transformer_config.num_heads
+
+        head_dim = dim // self.num_heads
+        # NOTE scale factor was wrong in my original version, can set manually to be compat with prev weights
+        self.scale = qk_scale or head_dim ** -0.5
+
+        # a linear layer that projects the input into concatenated queries, keys, and values for all heads
+        self.qkv = nn.Linear(dim, dim * 3, bias=transformer_config.qkv_bias)
+        self.attn_drop = nn.Dropout(transformer_config.attn_drop_rate)
+        # self.proj is a linear layer that projects the concatenated outputs 
+        # of all heads back to the original embedding dimension
+        self.proj = nn.Linear(dim, dim)
+        self.proj_drop = nn.Dropout(transformer_config.drop_out_rate)
+
+    def forward(self, x, mask=None):
+        B, N, C = x.shape # B=batch size, N=number of patches, C=embedding dimension
+        # qkv is a tensor of shape (B, N, 3, num_heads, head_dim)
+        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+        q, k, v = qkv[0], qkv[1], qkv[2]   # make torchscript happy (cannot use tensor as tuple)
+        # Attention scores are computed as the scaled dot product between queries and keys, 
+        # then normalized with softmax.
+        attn = (q @ k.transpose(-2, -1)) * self.scale
+        if mask is not None:
+            attn = attn.masked_fill(~mask.bool(), torch.tensor(-1e3, dtype=torch.float16)) # mask
+        attn = attn.softmax(dim=-1)
+        
+        # Dropout is applied to the attention weights.
+        attn = self.attn_drop(attn)
+        if mask is not None:
+            mask = mask.to(q.device)
+            attn = torch.mul(attn, mask) ###
+        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+        x = self.proj(x)
+        x = self.proj_drop(x)
+        # The output has the same shape as the input and can be used in subsequent transformer layers.
+        return x
+
 class PatchEmbed_overlap(nn.Module):
     """ Image to Patch Embedding with overlapping patches
     """
@@ -34,10 +147,10 @@ class PatchEmbed_overlap(nn.Module):
         x = x.flatten(2).transpose(1, 2) # [64, 8, 768]
         return x
 
-class PatchEmbed_Alpha(nn.Module):
+class PatchEmbed(nn.Module):
     """ Image to Patch Embedding - No overlapping patches
     """
-    def __init__(self, img_size=224, patch_size=16, in_chans=3, embed_dim=768):
+    def __init__(self, img_size=224, patch_size=16, in_channels=3, embed_dim=768):
         super().__init__()
         img_size = to_2tuple(img_size)
         patch_size = to_2tuple(patch_size)
@@ -46,7 +159,7 @@ class PatchEmbed_Alpha(nn.Module):
         self.patch_size = patch_size
         self.num_patches = num_patches
 
-        self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size)
+        self.proj = nn.Conv2d(in_channels, embed_dim, kernel_size=patch_size, stride=patch_size)
 
     def forward(self, x):
         B, C, H, W = x.shape
@@ -56,39 +169,61 @@ class PatchEmbed_Alpha(nn.Module):
         x = self.proj(x).flatten(2).transpose(1, 2)
         return x
 
-
-class PatchEmbedding(nn.Module):
-    """Vanilla implementation - No overlapping patches"""
-    def __init__(self, 
-                 img_size=224, 
-                 patch_size=16, 
-                 in_channels=3, 
-                 embed_dim=VIT_BASE_HIDDEN_SIZE):
+class HybridEmbed(nn.Module):
+    """ CNN Feature Map Embedding
+    Extract feature map from CNN, flatten, project to embedding dim.
+    """
+    def __init__(self, backbone, img_size=224, feature_size=None, in_chans=3, embed_dim=768):
         super().__init__()
-        self.patch_size = patch_size
-        self.num_patches = (img_size // patch_size) ** 2
-        self.proj = nn.Conv2d(in_channels, embed_dim, kernel_size=patch_size, stride=patch_size)
+        assert isinstance(backbone, nn.Module)
+        img_size = to_2tuple(img_size)
+        self.img_size = img_size
+        self.backbone = backbone
+        if feature_size is None:
+            with torch.no_grad():
+                # FIXME this is hacky, but most reliable way of determining the exact dim of the output feature
+                # map for all networks, the feature metadata has reliable channel and stride info, but using
+                # stride to calc feature dim requires info about padding of each stage that isn't captured.
+                training = backbone.training
+                if training:
+                    backbone.eval()
+                o = self.backbone(torch.zeros(1, in_chans, img_size[0], img_size[1]))
+                if isinstance(o, (list, tuple)):
+                    o = o[-1]  # last feature if backbone outputs list/tuple of features
+                feature_size = o.shape[-2:]
+                feature_dim = o.shape[1]
+                backbone.train(training)
+        else:
+            feature_size = to_2tuple(feature_size)
+            if hasattr(self.backbone, 'feature_info'):
+                feature_dim = self.backbone.feature_info.channels()[-1]
+            else:
+                feature_dim = self.backbone.num_features
+        self.num_patches = feature_size[0] * feature_size[1]
+        self.proj = nn.Conv2d(feature_dim, embed_dim, 1)
 
     def forward(self, x):
-        # x: [B, C, H, W]
-        x = self.proj(x)  # [B, embed_dim, H/patch, W/patch]
-        x = x.flatten(2).transpose(1, 2)  # [B, num_patches, embed_dim]
+        x = self.backbone(x)
+        if isinstance(x, (list, tuple)):
+            x = x[-1]  # last feature if backbone outputs list/tuple of features
+        x = self.proj(x).flatten(2).transpose(1, 2)
         return x
 
-class Mlp_Alpha(nn.Module):
-    def __init__(self, 
-                 in_features,
-                 hidden_features=None,
+class Mlp_ReID(nn.Module):
+    def __init__(self,
+                 transformer_config,
                  out_features=None,
-                 act_layer=nn.GELU, 
-                 drop=0.):
+                 act_layer=nn.GELU):
         super().__init__()
+        in_features = transformer_config.hidden_size
+        hidden_features = int(in_features * transformer_config.mlp_ratio)
+        # mlp_hidden_dim = int(embedding_dim * transformer_config.mlp_ratio)
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
         self.fc1 = nn.Linear(in_features, hidden_features)
         self.act = act_layer()
         self.fc2 = nn.Linear(hidden_features, out_features)
-        self.drop = nn.Dropout(drop)
+        self.drop = nn.Dropout(transformer_config.drop_out_rate)
 
     def forward(self, x):
         x = self.fc1(x)

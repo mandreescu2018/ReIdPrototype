@@ -41,7 +41,7 @@ class vit_builder_base(nn.Module):
         self.neck_feat = cfg.TEST.NECK_FEAT
 
         self.transformer_config = TransformerConfig(cfg)
-        self.in_planes = self.transformer_config.embedding_dimension
+        self.in_planes = self.transformer_config.hidden_size
         self.num_classes = cfg.DATASETS.NUMBER_OF_CLASSES
 
         print(f'using Transformer_type: {cfg.MODEL.TRANSFORMER_TYPE} as a backbone'.format())
@@ -68,7 +68,7 @@ class vit_builder_base(nn.Module):
     
     def _init_classifier_layers(self, num_classifiers=5):
         """ Initialize classifier layers for the model. """
-        in_planes = self.transformer_config.embedding_dimension
+        in_planes = self.transformer_config.hidden_size
         
         if self.config.LOSS.ID_LOSS_TYPE in ('arcface', 'cosface', 'amsoftmax', 'circle'):
             self.classifier = id_loss_factory[self.config.LOSS.ID_LOSS_TYPE](in_planes, 
@@ -118,7 +118,6 @@ class build_transformer(vit_builder_base):
             else:
                 # print("Test with feature before BN")
                 return global_feat
-
 
 class build_transformer_local(vit_builder_base):
     def __init__(self, cfg):

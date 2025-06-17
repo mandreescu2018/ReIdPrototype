@@ -99,7 +99,7 @@ class build_transformer_vanilla(nn.Module):
 
         transformer_config = TransformerConfig(cfg)
 
-        self.in_planes = transformer_config.embedding_dimension
+        self.in_planes = transformer_config.hidden_size
 
         print(f'using Transformer_type: {cfg.MODEL.TRANSFORMER_TYPE} as a backbone')
 

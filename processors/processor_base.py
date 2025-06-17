@@ -3,6 +3,7 @@ import torch
 from utils.device_manager import DeviceManager
 from .metrics_values import MetricsLiveValues
 from functional_logging import CompositeLogger
+from config.constants import *
 
     
 class ProcessorBase:
@@ -15,7 +16,8 @@ class ProcessorBase:
                  center_criterion=None,                 
                  loss_fn=None,
                  scheduler=None,
-                 start_epoch=0):
+                 start_epoch=0,
+                 **kwargs):
         self.config = cfg
         self.model = model      
         self.train_loader = train_loader
@@ -32,6 +34,8 @@ class ProcessorBase:
         self.live_values = MetricsLiveValues(cfg)
         self.live_values.train_loader_length = len(train_loader)
         self.composite_logger = CompositeLogger(cfg)
+        self.patch_centers = kwargs.get("patch_centers", None)
+        self.pc_criterion = kwargs.get("pc_criterion", None)
     
     def train(self):
         self.composite_logger.info('Start training')
@@ -44,8 +48,8 @@ class ProcessorBase:
         for n_iter, batch in enumerate(self.val_loader):
             with torch.no_grad():
 
-                pid = batch[self.config.INPUT.PERSON_ID_KEY]
-                camid = batch[self.config.INPUT.CAMERA_ID_KEY]
+                pid = batch[PID_INDEX]
+                camid = batch[CAMID_INDEX]
                 inputs = []
                 for item in self.config.INPUT.EVAL_KEYS:
                     if item != 'NaN':
@@ -113,6 +117,6 @@ class ProcessorBase:
         
         if self.live_values.current_epoch == self.max_epochs:
             torch.save(self.model, os.path.join(self.config.OUTPUT_DIR, self.config.MODEL.NAME + '_model_full.pth'))
-            sscripted_model = torch.jit.script(self.model)
-            sscripted_model.save(os.path.join(self.config.OUTPUT_DIR, self.config.MODEL.NAME + '_scritped_model_full.pt'))
+            # sscripted_model = torch.jit.script(self.model)
+            # sscripted_model.save(os.path.join(self.config.OUTPUT_DIR, self.config.MODEL.NAME + '_scritped_model_full.pt'))
     

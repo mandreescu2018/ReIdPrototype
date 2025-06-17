@@ -1,6 +1,6 @@
 MODEL:
-  PRETRAIN_CHOICE: 'imagenet'
-  PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
+  # PRETRAIN_CHOICE: 'imagenet'
+  # PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
   # PRETRAIN_PATH: './logs/dukemtmc_vit_base/vit_transformer_resume_30.pth'
   NAME: 'vit_transformer'
   TRANSFORMER_TYPE: 'vit_base_patch16_224_TransReID'
@@ -9,16 +9,16 @@ MODEL:
 
 SOLVER:
   OPTIMIZER_NAME: 'SGD'
-  MAX_EPOCHS: 120
-  BASE_LR: 0.008
+  # MAX_EPOCHS: 120
+  # BASE_LR: 0.008
   IMS_PER_BATCH: 64
   FEATURE_DIMENSION: 2048
-  CHECKPOINT_PERIOD: 10
-  LOG_PERIOD: 50
-  EVAL_PERIOD: 10
-  WEIGHT_DECAY:  1e-4
-  WEIGHT_DECAY_BIAS: 1e-4
-  BIAS_LR_FACTOR: 2
+  # CHECKPOINT_PERIOD: 10
+  # LOG_PERIOD: 50
+  # EVAL_PERIOD: 10
+  # WEIGHT_DECAY:  1e-4
+  # WEIGHT_DECAY_BIAS: 1e-4
+  # BIAS_LR_FACTOR: 2
   # decay rate of learning rate
   # GAMMA: 0.1
   # WARMUP_FACTOR: 0.01
@@ -26,15 +26,15 @@ SOLVER:
   WARMUP_METHOD: 'linear'
 
 
-LOSS:
-  ID_LOSS_TYPE: 'cross_entropy'
-  METRIC_LOSS_TYPE: 'triplet'
-  ID_LOSS_OUTPUT_INDEX: 0
-  METRIC_LOSS_OUTPUT_INDEX: 1
-  COMPONENTS: [
-    {"type": "cross_entropy", "weight": 1.0, "output_index": 0, "label_smooth": "off"},
-    {"type": "triplet", "weight": 1.0, "output_index": 1, "margin": None},
-  ]
+# LOSS:
+#   ID_LOSS_TYPE: 'cross_entropy'
+#   METRIC_LOSS_TYPE: 'triplet'
+#   ID_LOSS_OUTPUT_INDEX: 0
+#   METRIC_LOSS_OUTPUT_INDEX: 1
+#   COMPONENTS: [
+#     {"type": "cross_entropy", "weight": 1.0, "output_index": 0, "label_smooth": "off"},
+#     {"type": "triplet", "weight": 1.0, "output_index": 1, "margin": None},
+#   ]
 
 
 PROCESSOR: 

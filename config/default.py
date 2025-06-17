@@ -40,7 +40,10 @@ _C.MODEL.COS_LAYER = False
 # depth of the model (added for resnet dynamic creation)
 _C.MODEL.DEPTH = 50
 
-
+# part views
+_C.MODEL.PC_SCALE = 0.02
+_C.MODEL.PC_LOSS = False
+_C.MODEL.PC_LR = 1.0
 
 # Transformer setting
 _C.MODEL.DROP_PATH = 0.1
@@ -134,6 +137,7 @@ _C.DATASETS.NAMES = ('market1501')
 _C.DATASETS.ROOT_DIR = 'D:\datasets'
 # folder where images are stored
 _C.DATASETS.DIR = ('market1501')
+_C.DATASETS.TEST = None
 
 
 # -----------------------------------------------------------------------------
@@ -155,6 +159,30 @@ _C.DATALOADER.NUM_TEST_IMAGES = 8
 # random select 8 images of each tracklet for train
 _C.DATALOADER.NUM_TRAIN_IMAGES = 8
 
+# ---------------------------------------------------------------------------- #
+# Transforms for training
+# ---------------------------------------------------------------------------- #
+# _C.DATALOADER.TRAIN_TRANSFORMS = CN()
+# _C.DATALOADER.TRAIN_TRANSFORMS.RESIZE = True
+# _C.DATALOADER.TRAIN_TRANSFORMS.RANDOM_H_FLIP = True
+# _C.DATALOADER.TRAIN_TRANSFORMS.RANDOM_H_FLIP_PROB = 0.5
+# _C.DATALOADER.TRAIN_TRANSFORMS.PAD = True
+# _C.DATALOADER.TRAIN_TRANSFORMS.PADDING = 10
+# _C.DATALOADER.TRAIN_TRANSFORMS.RANDOM_CROP = True
+# _C.DATALOADER.TRAIN_TRANSFORMS.TO_TENSOR = True
+# _C.DATALOADER.TRAIN_TRANSFORMS.NORMALIZE = True
+# _C.DATALOADER.TRAIN_TRANSFORMS.RANDOM_ERASING = True
+# _C.DATALOADER.TRAIN_TRANSFORMS.RANDOM_ERASING_PROB = 0.5
+
+# # ---------------------------------------------------------------------------- #
+# # Transforms for testing
+# # ---------------------------------------------------------------------------- #
+# _C.DATALOADER.TEST_TRANSFORMS = CN()
+# _C.DATALOADER.TEST_TRANSFORMS.RESIZE = True 
+# _C.DATALOADER.TEST_TRANSFORMS.TO_TENSOR = True
+# _C.DATALOADER.TEST_TRANSFORMS.NORMALIZE = True
+
+# {'tranform':'random_erasing', 'prob': 0.5}
 _C.DATALOADER.TRAIN_TRANSFORMS = [
     {'tranform':'resize'}, 
     {'tranform':'random_horizontal_flip', 'prob': 0.5}, 
@@ -162,7 +190,7 @@ _C.DATALOADER.TRAIN_TRANSFORMS = [
     {'tranform':'random_crop'}, 
     {'tranform':'to_tensor'}, 
     {'tranform':'normalize'}, 
-    {'tranform':'random_erasing', 'prob': 0.5}
+    
     ]
 
 _C.DATALOADER.TEST_TRANSFORMS = [

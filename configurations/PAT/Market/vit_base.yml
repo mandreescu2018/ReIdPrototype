@@ -1,17 +1,17 @@
 MODEL:
-  PRETRAIN_CHOICE: 'resume'
-  # PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
+  PRETRAIN_CHOICE: 'imagenet'
+  PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
   # PRETRAIN_PATH: './logs/market_vit_base/vit_transformer_resume_110.pth'
-  PRETRAIN_PATH: './logs/market_vit_base_pytorch/vit_transformer_pytorch_resume_70.pth'
-  NAME: 'vit_transformer_pytorch'
+  PC_LOSS: True
+  NAME: 'vit_pat_transformer'
   TRANSFORMER:
-    TYPE: 'vit_b_16'
+    TYPE: 'vit_base_patch16_224_TransReID'
   
 
 SOLVER:
   OPTIMIZER_NAME: 'SGD'
   MAX_EPOCHS: 120
-  BASE_LR: 0.008
+  BASE_LR: 0.001 # 0.0004 for msmt
   IMS_PER_BATCH: 64
   FEATURE_DIMENSION: 2048
   CHECKPOINT_PERIOD: 10
@@ -32,7 +32,7 @@ PROCESSOR:
 
 LOSS:
   ID_LOSS_TYPE: 'cross_entropy'
-  METRIC_LOSS_TYPE: 'triplet'
+  # METRIC_LOSS_TYPE: 'triplet'
   ID_LOSS_OUTPUT_INDEX: 0
   METRIC_LOSS_OUTPUT_INDEX: 1
   COMPONENTS: [
@@ -41,25 +41,42 @@ LOSS:
   ]
 
 INPUT:
-  SIZE_TRAIN: [224, 224]
-  SIZE_TEST: [224, 224]
+  SIZE_TRAIN: [256, 128]
+  SIZE_TEST: [256, 128]
   # PIXEL_MEAN: [0.485, 0.456, 0.406]
   # PIXEL_STD: [0.229, 0.224, 0.225]
   PIXEL_MEAN: [0.5, 0.5, 0.5]
   PIXEL_STD: [0.5, 0.5, 0.5]
   PADDING: 10
-  # TRAIN_KEYS: [0, 1, 2, 3]
-  # EVAL_KEYS: [0, NaN, 3, 4]
-  TRAIN_KEYS: [0]
+  TRAIN_KEYS: [0, 1, 2, 3]
   EVAL_KEYS: [0]
 
 DATALOADER:
   SAMPLER: 'softmax_triplet'
   NUM_INSTANCE: 4
   NUM_WORKERS: 8
+  TRAIN_TRANSFORMS: [
+    {'tranform':'resize'}, 
+    {'tranform':'random_horizontal_flip', 'prob': 0.5}, 
+    {'tranform':'pad', 'padding': 10}, 
+    {'tranform':'random_crop'}, 
+    {'tranform':'to_tensor'}, 
+    {'tranform':'normalize'}, 
+    {'tranform':'random_erasing', 'prob': 0.5}
+    ]
+
+  TEST_TRANSFORMS: [
+    {'tranform':'resize'}, 
+    {'tranform':'to_tensor'}, 
+    {'tranform':'normalize'}, 
+    ]
 
 DATASETS:
+  # NAMES: market1501
+  # DIR: 'market1501'
+
   NAMES: market1501
+  # TEST: dukemtmc
   DIR: 'market1501'
 
 TEST:
@@ -74,7 +91,7 @@ LOGGING:
   WANDB_USE: False
   WANDB_PROJECT: 'transformer_vit_market_base'
   WANDB_NAME: 'market_vit_base'
-OUTPUT_DIR: './logs/market_vit_base_pytorch'
+OUTPUT_DIR: './logs/pat_vit_base'
 # EXPERIMENT_NAME: 'vit_base_market_norm_imgnet_close'
-EXPERIMENT_NAME: 'vit_base_market_pytorch'
+EXPERIMENT_NAME: 'pat_vit_base'
 

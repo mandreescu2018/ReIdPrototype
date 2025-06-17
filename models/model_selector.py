@@ -7,6 +7,7 @@ from .simple_model import SimpleReIDModel
 from .resnet_BoT import BagOfTricksBuilder
 from .hacnn_model import HACNNBuilder
 from .QAConv import QAConvBuilder
+from .vit_pat_model import build_part_attention_vit
 from utils.device_manager import DeviceManager
 
 model_factory = {
@@ -18,7 +19,8 @@ model_factory = {
     'resnet50': BagOfTricksBuilder,
     'qaconv': QAConvBuilder,
     'simple_resnet50': SimpleReIDModel,
-    'hacnn': HACNNBuilder
+    'hacnn': HACNNBuilder,
+    'vit_pat_transformer': build_part_attention_vit
 }
 
 class ModelLoader:

@@ -1,7 +1,7 @@
 MODEL:
-  PRETRAIN_CHOICE: 'resume'
-  # PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
-  PRETRAIN_PATH: './logs/market_vit_base_jpm/vit_transformer_jpm_resume_110.pth'
+  PRETRAIN_CHOICE: 'imagenet'
+  PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
+  # PRETRAIN_PATH: './logs/market_vit_base_jpm/vit_transformer_jpm_resume_110.pth'
   NAME: 'vit_transformer_jpm'
   TRANSFORMER_TYPE: 'vit_base_patch16_224_TransReID'
   STRIDE_SIZE: [16, 16] # equal to patch size

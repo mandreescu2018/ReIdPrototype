@@ -1,5 +1,6 @@
 from .processor_standard import ProcessorStandard
 from .processor_qaconv import ProcessorQaconv
+from .processor_pat import ProcessorPat
 
 __factory = {
     'vit_transformer': ProcessorStandard,
@@ -11,6 +12,8 @@ __factory = {
     'simple_resnet50': ProcessorStandard,
     'hacnn': ProcessorStandard,
     'qaconv': ProcessorQaconv,
+    'PAT': ProcessorPat,
+    'vit_pat_transformer': ProcessorPat,
 
 }
 

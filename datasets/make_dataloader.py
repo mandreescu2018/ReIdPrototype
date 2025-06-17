@@ -38,14 +38,14 @@ class CustomCollate:
 
     def train_collate_fn(self, batch):
         
-        imgs, pids, camids, viewids, _ = zip(*batch)
+        imgs, pids, camids, viewids, path = zip(*batch)
         
         imgs = self.apply_transform(imgs, image=True)
         pids = self.apply_transform(pids)
         camids = self.apply_transform(camids)
         viewids = self.apply_transform(viewids)
 
-        return imgs, pids, camids, viewids,
+        return imgs, pids, camids, viewids, path
 
     def val_collate_fn(self, batch):
         imgs, pids, camids, viewids, img_paths = zip(*batch)

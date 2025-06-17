@@ -1,6 +1,7 @@
 from utils import AverageMeter
 from utils.metrics import R1_mAP_eval
 
+
 class MetricsLiveValues:
     def __init__(self, cfg):
         self.config = cfg
@@ -38,3 +39,16 @@ class MetricsLiveValues:
         acc = (id_hat_element.max(1)[1] == target).float().mean()
 
         return acc 
+
+class MetricsLiveValuesDG(MetricsLiveValues):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.pc_loss_meter = AverageMeter()
+    
+    def reset_metrics(self):
+        super().reset_metrics()
+        self.pc_loss_meter.reset()
+    
+    # def update(self, loss, outputs, target, accuracy=None):
+
+

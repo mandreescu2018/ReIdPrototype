@@ -54,6 +54,21 @@ DATALOADER:
   SAMPLER: 'softmax_triplet'
   NUM_INSTANCE: 4
   NUM_WORKERS: 8
+  TRAIN_TRANSFORMS: [
+    {'tranform':'resize'},
+    {'tranform':'random_horizontal_flip', 'prob': 0.5},
+    {'tranform':'pad', 'padding': 10}, 
+    {'tranform':'random_crop'}, 
+    {'tranform':'to_tensor'}, 
+    {'tranform':'normalize'}, 
+    {'tranform':'random_erasing', 'prob': 0.5}    
+    ]
+
+  TEST_TRANSFORMS: [
+      {'tranform':'resize'},
+      {'tranform':'to_tensor'},
+      {'tranform':'normalize'}, 
+      ]
 
 DATASETS:
   NAMES: market1501
