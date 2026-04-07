@@ -1,5 +1,5 @@
 MODEL:
-  PRETRAIN_CHOICE: 'imagenet'
+  PRETRAIN_CHOICE: 'cross_domain'
   PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
   # PRETRAIN_PATH: './logs/market_vit_base/vit_transformer_resume_110.pth'
   PC_LOSS: True
@@ -10,7 +10,7 @@ MODEL:
 
 SOLVER:
   OPTIMIZER_NAME: 'SGD'
-  MAX_EPOCHS: 120
+  MAX_EPOCHS: 60
   BASE_LR: 0.001 # 0.0004 for msmt
   IMS_PER_BATCH: 64
   FEATURE_DIMENSION: 2048
@@ -36,7 +36,7 @@ LOSS:
   ID_LOSS_OUTPUT_INDEX: 0
   METRIC_LOSS_OUTPUT_INDEX: 1
   COMPONENTS: [
-    {"type": "cross_entropy", "weight": 1.0, "output_index": 0, "label_smooth": "on"},
+    {"type": "cross_entropy", "weight": 1.0, "output_index": 0, "label_smooth": "off"},
     {"type": "triplet", "weight": 1.0, "output_index": 1, "margin": None},
   ]
 
@@ -60,8 +60,7 @@ DATALOADER:
     {'tranform':'pad', 'padding': 10}, 
     {'tranform':'random_crop'}, 
     {'tranform':'to_tensor'}, 
-    {'tranform':'normalize'}, 
-    {'tranform':'random_erasing', 'prob': 0.5}
+    {'tranform':'normalize'}
     ]
 
   TEST_TRANSFORMS: [
@@ -71,18 +70,21 @@ DATALOADER:
     ]
 
 DATASETS:
-  # NAMES: market1501
-  # DIR: 'market1501'
 
-  NAMES: market1501
-  # TEST: dukemtmc
-  DIR: 'market1501'
+  # NAMES: msmt17
+  # DIR: 'MSMT17_V1'
+
+  NAMES: dukemtmc
+  DIR: 'DukeMTMC-reID'
+
+  # NAMES: market1501
+  # DIR: 'Market-1501-v15.09.15'
 
 TEST:
   EVAL: True
   IMS_PER_BATCH: 256
   RE_RANKING: False
-  WEIGHT: './logs/market_vit_base/vit_transformer_resume_120.pth'
+  WEIGHT: './logs/pat_vit_base/vit_pat_transformer_resume_60.pth'
   NECK_FEAT: 'before'
   FEAT_NORM: 'yes'
 
