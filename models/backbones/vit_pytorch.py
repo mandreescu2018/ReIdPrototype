@@ -30,7 +30,7 @@ import torch.nn.functional as F
 # from torch._six import container_abcs
 import collections.abc as container_abcs
 
-from config.constants import *
+# from config.constants import *
 from .transformer_parts import Mlp_ReID, PatchEmbed_overlap, HybridEmbed, Attention, DropPath
 from utils.weight_utils import init_weights, trunc_normal
 

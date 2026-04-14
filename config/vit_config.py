@@ -2,6 +2,9 @@ from torch import nn
 from functools import partial
 from config.constants import *
 
+def norm_layer():
+    return partial(nn.LayerNorm, eps=1e-6)
+
 class TransformerConfig:
     transformer_factory = {
         'vit_base_patch16_224_TransReID': {'num_heads': VIT_BASE_HEADS, 

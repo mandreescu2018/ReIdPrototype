@@ -46,8 +46,6 @@ INPUT:
   PIXEL_MEAN: [0.5, 0.5, 0.5]
   PIXEL_STD: [0.5, 0.5, 0.5]
   PADDING: 10
-  TRAIN_KEYS: [0, 1, 2, 3]
-  EVAL_KEYS: [0, NaN, 3, 4]
 
 DATALOADER:
   SAMPLER: 'softmax_triplet'
@@ -62,7 +60,8 @@ TEST:
   EVAL: True
   IMS_PER_BATCH: 256
   RE_RANKING: False
-  WEIGHT: './logs/market_vit_base/vit_transformer_resume_120.pth'
+  # WEIGHT: './logs/market_vit_base/vit_transformer_resume_120.pth'
+  WEIGHT: './logs/market_vit_base/vit_base_market.pth'
   NECK_FEAT: 'before'
   FEAT_NORM: 'yes'
 
@@ -70,5 +69,5 @@ LOGGING:
   WANDB_USE: False
   WANDB_PROJECT: 'transformer_vit_market_base'
   WANDB_NAME: 'market_vit_base'
-OUTPUT_DIR: './logs/market_vit_base'
+OUTPUT_DIR: './logs/market_vit_base_cross_domain'
 

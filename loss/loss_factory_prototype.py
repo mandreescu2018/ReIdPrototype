@@ -11,10 +11,11 @@ class BaseLoss:
         self.output_index = cfg["output_index"]
         self.label_smooth = cfg.get("label_smooth", None)
         self.margin = cfg.get("margin", None)
+        self.loss = None
     
-    @property
-    def loss(self):
-        raise NotImplementedError
+    # @property
+    # def loss(self):
+    #     raise NotImplementedError
 
     def __call__(self, outputs, target):
         return self.compute(outputs, target) * self.weight
@@ -24,12 +25,13 @@ class CenterLossWrap(BaseLoss):
         super().__init__(cfg)
         self.num_classes = num_classes
         self.feature_dim = feature_dim
+        self.loss = CenterLoss(self.num_classes, self.feature_dim)
     
-    @property
-    def loss(self):
-        if self._loss == None:
-            self._loss = CenterLoss(self.num_classes, self.feature_dim)
-        return self._loss
+    # @property
+    # def loss(self):
+    #     if self._loss == None:
+    #         self._loss = CenterLoss(self.num_classes, self.feature_dim)
+    #     return self._loss
     
     def compute(self, outputs, target):
         feat = outputs[self.output_index]
@@ -37,13 +39,18 @@ class CenterLossWrap(BaseLoss):
 
 class TripletLossWrap(BaseLoss):
     def __init__(self, cfg) -> None:
-        super().__init__(cfg)        
+        super().__init__(cfg)
+        self.loss = TripletLoss(self.margin)     
     
-    @property
-    def loss(self):
-        if self._loss == None:
-            self._loss = TripletLoss(self.margin)
-        return self._loss
+    # def loss(self):
+    #     if self._loss == None:
+    #         self._loss = TripletLoss(self.margin)
+    #     return self._loss
+    # @property
+    # def loss(self):
+    #     if self._loss == None:
+    #         self._loss = TripletLoss(self.margin)
+    #     return self._loss
     
     def compute(self, outputs, target):
         feat = outputs[self.output_index]
@@ -57,13 +64,14 @@ class TripletLossWrap(BaseLoss):
 
 class TripletLossMatcherWrap(BaseLoss):
     def __init__(self, cfg) -> None:
-        super().__init__(cfg)        
+        super().__init__(cfg)
+        self.loss = TripletLossMatcher(self.margin)
     
-    @property
-    def loss(self):
-        if self._loss == None:
-            self._loss = TripletLossMatcher(self.margin)
-        return self._loss
+    # @property
+    # def loss(self):
+    #     if self._loss == None:
+    #         self._loss = TripletLossMatcher(self.margin)
+    #     return self._loss
 
     def compute(self, outputs, target):
         if isinstance(outputs, tuple):
@@ -76,15 +84,23 @@ class CrossEntropyLossWrap(BaseLoss):
     def __init__(self, cfg, num_classes) -> None:
         super().__init__(cfg)
         self.num_classes = num_classes
+        self.set_loss()
     
-    @property
-    def loss(self):
-        if self._loss == None:
-            if  self.label_smooth == 'on':
-                self._loss = CrossEntropyLabelSmooth(self.num_classes)
-            else:
-                self._loss = nn.CrossEntropyLoss()
-        return self._loss
+   
+    def set_loss(self):
+        if self.label_smooth == 'on':
+            self.loss = CrossEntropyLabelSmooth(self.num_classes)
+        else:
+            self.loss = nn.CrossEntropyLoss()
+
+    # @property
+    # def loss(self):
+    #     if self._loss == None:
+    #         if  self.label_smooth == 'on':
+    #             self._loss = CrossEntropyLabelSmooth(self.num_classes)
+    #         else:
+    #             self._loss = nn.CrossEntropyLoss()
+    #     return self._loss
 
     def compute(self, outputs, target):
         if isinstance(outputs, tuple):

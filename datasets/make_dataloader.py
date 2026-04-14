@@ -25,16 +25,15 @@ __factory = {
 
 class CustomCollate:
     
-    def __init__(self, cfg):
+    def __init__(self):
        
         self.stack_imgs = partial(torch.stack, dim=0)
-        self.config = cfg
 
-    def apply_transform(self, object, image=False):
+    def apply_transform(self, obj, image=False):
         if image:
-            return self.stack_imgs(object)
+            return self.stack_imgs(obj)
         else:
-            return torch.tensor(object, dtype=torch.int64)
+            return torch.tensor(obj, dtype=torch.int64)
 
     def train_collate_fn(self, batch):
         
@@ -48,13 +47,14 @@ class CustomCollate:
         return imgs, pids, camids, viewids, path
 
     def val_collate_fn(self, batch):
-        imgs, pids, camids, viewids, img_paths = zip(*batch)
+        imgs, pids, camids, viewids, path = zip(*batch)
         
         imgs = self.apply_transform(imgs, image=True)
-        camids_tensor = self.apply_transform(camids)
+        pids = self.apply_transform(pids)
+        camids = self.apply_transform(camids)
         viewids = self.apply_transform(viewids)
 
-        return imgs, pids, camids, camids_tensor, viewids, img_paths
+        return imgs, pids, camids, viewids, path
 
 def make_dataloader(cfg):
     
@@ -68,7 +68,7 @@ def make_dataloader(cfg):
     train_transforms = transforms_manager.image_train_transforms
     val_transforms = transforms_manager.image_test_transforms
 
-    custom_collate = CustomCollate(cfg)
+    custom_collate = CustomCollate()
 
     num_workers = cfg.DATALOADER.NUM_WORKERS
 

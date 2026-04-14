@@ -45,7 +45,6 @@ INPUT:
   PIXEL_STD: [0.5, 0.5, 0.5]
   PADDING: 10
   TRAIN_KEYS: [0, 1, 2, 3]
-  EVAL_KEYS: [0, NaN, 3, 4]
 
 DATALOADER:
   SAMPLER: 'softmax_triplet'

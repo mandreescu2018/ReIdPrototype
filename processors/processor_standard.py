@@ -1,6 +1,7 @@
 import torch
 from torch import amp
 from.processor_base import ProcessorBase
+from utils import timed
 import time
 import os
 
@@ -28,6 +29,7 @@ class ProcessorStandard(ProcessorBase):
                     self.save_model(os.path.join(self.config.OUTPUT_DIR, self.config.MODEL.NAME + '_resume_{}.pth'.format(epoch))) 
                 
 
+    @timed
     def train_step(self):
         self.model.train()
         for n_iter, batch in enumerate(self.train_loader):

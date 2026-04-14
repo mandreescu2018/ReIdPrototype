@@ -8,6 +8,7 @@ from .resnet_BoT import BagOfTricksBuilder
 from .hacnn_model import HACNNBuilder
 from .QAConv import QAConvBuilder
 from .vit_pat_model import build_part_attention_vit
+from .m3l_model import MetaResNet
 from utils.device_manager import DeviceManager
 
 model_factory = {
@@ -20,7 +21,9 @@ model_factory = {
     'qaconv': QAConvBuilder,
     'simple_resnet50': SimpleReIDModel,
     'hacnn': HACNNBuilder,
-    'vit_pat_transformer': build_part_attention_vit
+    'vit_pat_transformer': build_part_attention_vit,
+    'm3l': MetaResNet,
+
 }
 
 class ModelLoader:
@@ -105,9 +108,17 @@ class ModelLoader:
             self._optimizer.load_state_dict(self.checkpoint['optimizer_state_dict'])
             self._scheduler.load_state_dict(self.checkpoint['scheduler_state_dict'])
         elif self.cfg.MODEL.PRETRAIN_CHOICE == 'test':
-            self.model.load_state_dict(self.checkpoint['model_state_dict'])
+            if 'model_state_dict' not in self.checkpoint:
+                self.model.load_state_dict(self.checkpoint)
+            else:
+                self.model.load_state_dict(self.checkpoint['model_state_dict'])
+            # self.model.load_state_dict(self.checkpoint)
         elif self.cfg.MODEL.PRETRAIN_CHOICE == 'cross_domain':
-            self.load_param_cross(self.checkpoint['model_state_dict'])
+            if 'model_state_dict' not in self.checkpoint:
+                self.load_param_cross(self.checkpoint)
+            else:
+                self.load_param_cross(self.checkpoint['model_state_dict'])
+            # self.load_param_cross(self.checkpoint)
             
         
     

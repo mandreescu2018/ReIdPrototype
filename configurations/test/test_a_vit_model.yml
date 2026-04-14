@@ -1,12 +1,11 @@
 MODEL:
-  PRETRAIN_CHOICE: 'resume'
+  PRETRAIN_CHOICE: 'test'
   # PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
-  PRETRAIN_PATH: './logs/market_vit_base_vanilla/vit_transformer_vanilla_resume_80.pth'
-  NAME: 'vit_transformer_vanilla'
-  TRANSFORMER_TYPE: 'vit_base_patch16_224_TransReID_vanilla'
+  PRETRAIN_PATH: './logs/market_vit_base/vit_transformer_resume_110.pth'
+  # PRETRAIN_PATH: ''
+  NAME: 'vit_transformer'
   TRANSFORMER:
-    TYPE: 'vit_base_patch16_224_TransReID_vanilla'
-    
+    TYPE: 'vit_base_patch16_224_TransReID'
   
 
 SOLVER:
@@ -27,20 +26,6 @@ SOLVER:
   WARMUP_ITERS: 5
   WARMUP_METHOD: 'linear'
 
-PROCESSOR: 
-  # INPUT_KEYS: 4
-  TARGET_KEY: 1
-
-LOSS:
-  ID_LOSS_TYPE: 'cross_entropy'
-  METRIC_LOSS_TYPE: 'triplet'
-  ID_LOSS_OUTPUT_INDEX: 0
-  METRIC_LOSS_OUTPUT_INDEX: 1
-  COMPONENTS: [
-    {"type": "cross_entropy", "weight": 1.0, "output_index": 0, "label_smooth": "off"},
-    {"type": "triplet", "weight": 1.0, "output_index": 1, "margin": None},
-  ]
-
 INPUT:
   SIZE_TRAIN: [256, 128]
   SIZE_TEST: [256, 128]
@@ -55,16 +40,34 @@ DATALOADER:
   SAMPLER: 'softmax_triplet'
   NUM_INSTANCE: 4
   NUM_WORKERS: 8
+  TRAIN_TRANSFORMS: [
+    {'tranform':'resize'},
+    {'tranform':'random_horizontal_flip', 'prob': 0.5},
+    {'tranform':'pad', 'padding': 10}, 
+    {'tranform':'random_crop'}, 
+    {'tranform':'to_tensor'}, 
+    {'tranform':'normalize'}, 
+    {'tranform':'random_erasing', 'prob': 0.5}    
+    ]
+
+  TEST_TRANSFORMS: [
+      {'tranform':'resize'},
+      {'tranform':'to_tensor'},
+      {'tranform':'normalize'}, 
+      ]
 
 DATASETS:
   NAMES: market1501
   DIR: 'market1501'
+  # NAMES: dukemtmc
+  # DIR: 'DukeMTMC-reID'
 
 TEST:
   EVAL: True
   IMS_PER_BATCH: 256
   RE_RANKING: False
-  WEIGHT: './logs/market_vit_base/vit_transformer_resume_120.pth'
+  # WEIGHT: './logs/test_model/vit_transformer_resume_20.pth'
+  WEIGHT: './weights_pretrained/model_transreid.pth'
   NECK_FEAT: 'before'
   FEAT_NORM: 'yes'
 
@@ -72,7 +75,7 @@ LOGGING:
   WANDB_USE: False
   WANDB_PROJECT: 'transformer_vit_market_base'
   WANDB_NAME: 'market_vit_base'
-OUTPUT_DIR: './logs/market_vit_base_vanilla'
+OUTPUT_DIR: './logs/market_vit_base_test'
 # EXPERIMENT_NAME: 'vit_base_market_norm_imgnet_close'
-EXPERIMENT_NAME: 'vit_base_vanilla_market'
+EXPERIMENT_NAME: 'vit_base_market'
 

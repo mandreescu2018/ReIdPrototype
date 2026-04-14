@@ -2,10 +2,10 @@ MODEL:
   # PRETRAIN_CHOICE: 'imagenet'
   # PRETRAIN_PATH: './weights_pretrained/jx_vit_base_p16_224-80ecf9dd.pth'
   # PRETRAIN_PATH: './logs/dukemtmc_vit_base/vit_transformer_resume_30.pth'
+  PRETRAIN_PATH: './weights_pretrained/model_transreid.pth'
   NAME: 'vit_transformer'
-  TRANSFORMER_TYPE: 'vit_base_patch16_224_TransReID'
-  NO_MARGIN: True
-  STRIDE_SIZE: [16, 16]
+  TRANSFORMER:
+    TYPE: 'vit_base_patch16_224_TransReID'
 
 SOLVER:
   OPTIMIZER_NAME: 'SGD'
@@ -70,17 +70,20 @@ DATALOADER:
       {'tranform':'normalize'}, 
       ]
 
+
 DATASETS:
   # NAMES: ('occ_duke')
   # DIR: 'occluded_duke'
-  NAMES: msmt17
-  DIR: 'MSMT17_V1'
+  # NAMES: msmt17
+  # DIR: 'MSMT17_V1'
+  NAMES: market1501
+  DIR: 'market1501'
 
 TEST:
   EVAL: True
   IMS_PER_BATCH: 256
   RE_RANKING: False
-  WEIGHT: './logs/dukemtmc_vit_base/vit_transformer_resume_120.pth'
+  WEIGHT: './weights_pretrained/model_transreid.pth'
   NECK_FEAT: 'before'
   FEAT_NORM: 'yes'
 LOGGING:
